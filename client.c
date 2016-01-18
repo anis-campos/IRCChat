@@ -21,14 +21,14 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int creerSocket(const char * adresseIp, const char* pseud);
 void* heartBeats(void* arg);
+int connexion();
 
 int main (int argc, char *argv[])
 {
-    int sd, i;
-    socklen_t taille;
+    int sd;
+
     pthread_t threadHeartBeat;
 
-    char msgbuf[MAX_MSG];
     char pseudo[15];
     char addresseIP[20];
 
@@ -47,7 +47,7 @@ int main (int argc, char *argv[])
     }
 
 
-
+    connexion();
 
     /*
     for (i = 2; i < argc; i++)

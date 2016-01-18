@@ -56,7 +56,7 @@ int main(void)
   for (;;)
   {
     addr_len = sizeof(client_addr);
-    n = recvfrom(sd, (void*) &trame, MAX_MSG, 0,
+    n = recvfrom(sd, (void*) &trame, sizeof(Trame), 0,
         (struct sockaddr *)&client_addr, &addr_len);
     if (n == -1)
       perror("recvfrom");
