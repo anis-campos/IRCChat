@@ -1,18 +1,43 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#define SERVER_PORT 1500
-#define MAX_MSG 80
+#include "protocol.h"
 
+struct Client {
+  struct sockaddr client_addr;
+  char name[100];
+}
 
+struct Salon {
+  char name[100];
+  int clients_id[50];
+}
 
-int main(int nbarg, char **argv)
+typedef struct Client Client;
+typedef struct Salon Salon;
+
+int main(void)
 {
   int sd, n;
   socklen_t addr_len;
   struct sockaddr_in client_addr, server_addr;
-  char msgbuf[MAX_MSG];
+  Trame trame;
+  
+  Salon salons[10];
+  
+  int i;
+  for (i = 0; i<10; i++) {
+      sprintf(salons[i].name,"salon%d",i);
+  }
+  
+  Client clients[50];
+  int j;
+  for (j = 0; j<50; j++) {
+     
+  }
+  
   // Create socket
   if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
   {
@@ -31,17 +56,35 @@ int main(int nbarg, char **argv)
   for (;;)
   {
     addr_len = sizeof(client_addr);
-
-    if (recvfrom(sd, msgbuf, MAX_MSG, 0,
-        (struct sockaddr *)&client_addr, &addr_len) == -1)
+    n = recvfrom(sd, (void*) &trame, MAX_MSG, 0,
+        (struct sockaddr *)&client_addr, &addr_len);
+    if (n == -1)
       perror("recvfrom");
     else {
-      printf("[%s] - received from %s: %s\n",
-          argv[0],
-          inet_ntoa(client_addr.sin_addr), msgbuf);
-          sendto(sd, "Message Recu", 12 + 1, 0,
-                (struct sockaddr *)&client_addr, sizeof(client_addr));
+      if (trame.ID_OP == 0) {
+	printf("Demande de connexion\n");
+	
+      }
+      else if (trame.ID_OP == 4) {
+	printf("JOIN\n");
+      }
+      else if (trame.ID_OP == 7) {
+	printf("Disconnect\n");
+      }
+      else if (trame.ID_OP == 8) {
+	 printf("leave\n");
+      }
+      else if (trame.ID_OP == 9) {
+	 printf("liste\n");
+      }
+      else if (trame.ID_OP == 10) {
+	 printf("say\n");
+      }
+      else {
+	 printf("ERREUR\n");
+      }
     }
   }
   return 0;
 }
+
