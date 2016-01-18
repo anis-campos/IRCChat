@@ -17,6 +17,7 @@
 int sd;
 struct sockaddr_in serv_addr;
 int idUser;
+char pseudo[15];
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int creerSocket(const char * adresseIp, const char* pseud);
@@ -29,15 +30,17 @@ int main (int argc, char *argv[])
 
     pthread_t threadHeartBeat;
 
-    char pseudo[15];
+    
     char addresseIP[20];
 
     //Accueil: config user & ip
-    printf("\nVeuillez saisir le pseudo  : ");
+    system("clear");
+    printf("\n\n         ///   ///////       //////\n        ///   ///    ///  ///        \n       ///   ///////      ///        //   ||_||  //\\\\ =||=\n      ///   ///   ///      ///////   \\\\   || || //~\\\\  || \n\n      ___________________________\n               CONNEXION\n      ___________________________");
+    printf("\n      Pseudo: ");
     scanf("%s",pseudo);
 
     do{
-        printf("Veuillez saisir l'adresse IP du serveur : ");
+        printf("      IP serveur: ");
         scanf("%s",addresseIP);
     }while(creerSocket(addresseIP,pseudo)==-1);
 
@@ -49,7 +52,12 @@ int main (int argc, char *argv[])
     }
 
 
-    connexion();
+    if(!connexion()){
+	    printf("erreur de connexion");
+	    exit(0);
+	    }
+    
+    printf("\n===// IRCChat //===========================================\n");
 
     /*
     for (i = 2; i < argc; i++)
@@ -82,9 +90,10 @@ int main (int argc, char *argv[])
 int connexion(){
     Trame trame;
     trame.ID_OP = Connect;
-    strcpy(trame.DATA,"PEC");
+    strcpy(trame.DATA,pseudo);
 
     return sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    
 }
 
 
