@@ -32,6 +32,7 @@ int main (int argc, char *argv[])
     char pseudo[15];
     char addresseIP[20];
 
+    //Accueil: config user & ip
     printf("\nVeuillez saisir le pseudo  : ");
     scanf("%s",pseudo);
 
@@ -40,6 +41,7 @@ int main (int argc, char *argv[])
         scanf("%s",addresseIP);
     }while(creerSocket(addresseIP,pseudo)==-1);
 
+    //Lancement du heart-beat
     pthread_mutex_lock(&mutex);
     if(pthread_create(&threadHeartBeat, NULL, heartBeats, NULL) == -1) {
         perror("pthread_create threadHeartBeat");
