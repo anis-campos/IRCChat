@@ -6,22 +6,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include "client.h"
 
-#include "protocol.h"
-
-#define SERVER_PORT 1500
-#define MAX_MSG 80
-#define FREQ_HEART 30
 
 
 int sd;
 struct sockaddr_in serv_addr;
 int idUser;
+char pseudo[15];
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int creerSocket(const char * adresseIp, const char* pseud);
-void* heartBeats(void* arg);
-int connexion();
+
 
 int main (int argc, char *argv[])
 {
@@ -29,17 +24,19 @@ int main (int argc, char *argv[])
 
     pthread_t threadHeartBeat;
 
-    char pseudo[15];
+
     char addresseIP[20];
 
-    printf("\nVeuillez saisir le pseudo  : ");
-    scanf("%s",pseudo);
 
+    // Saisie d'une adresse de serveur valide
     do{
         printf("Veuillez saisir l'adresse IP du serveur : ");
         scanf("%s",addresseIP);
     }while(creerSocket(addresseIP,pseudo)==-1);
 
+
+
+    //Thread de perssistance de connexion
     pthread_mutex_lock(&mutex);
     if(pthread_create(&threadHeartBeat, NULL, heartBeats, NULL) == -1) {
         perror("pthread_create threadHeartBeat");
@@ -47,42 +44,58 @@ int main (int argc, char *argv[])
     }
 
 
-    connexion();
+    //saisie du pseudo
+    printf("\nVeuillez saisir le pseudo  : ");
+    scanf("%s",pseudo);
 
-    /*
-    for (i = 2; i < argc; i++)
-    {
-        if (sendto(sd, argv[i], strlen(argv[i]) + 1, 0,
-                   (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1)
-        {
-            perror("sendto");
-            return 1;
-        } else {
-            printf("[%s] - Sent to %s: %s\n", argv[0], inet_ntoa(serv_addr.sin_addr), argv[i]);
-            printf("En Attente de la réponse...\n");
-            taille=sizeof(serv_addr);
+    // Connexion au serveur
+    int code;
+    do{
+        code = connexion();
+        switch(code){
 
-            if (recvfrom(sd, msgbuf, MAX_MSG, 0,
-                         (struct sockaddr *)&serv_addr, &taille ) == -1)
-                perror("recvfrom");
-            else{
+            case Connectnumberrefuse:
+                printf("Veuillez reaysser plus tard");
+                break;
 
-                printf("\t=>Reply from %s: %s\n",
+            case Connectuserrefuse:
+                printf("\nVeuillez saisir le pseudo  : ");
+                scanf("%s",pseudo);
+                break;
 
-                       inet_ntoa(client_addr.sin_addr), msgbuf);
-            }
         }
-    }*/
+    }while(code!=Connectok);
+
+    pthread_mutex_unlock(&mutex);
+
     close(sd);
     return 0;
 }
+
+
 
 int connexion(){
     Trame trame;
     trame.ID_OP = Connect;
     strcpy(trame.DATA,"PEC");
+    socklen_t taille=sizeof(serv_addr);
 
-    return sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    if(envoyer(&trame,&serv_addr)==-1){
+        perror("sendto");
+        return -1;
+    }else{
+        if(recevoir(&trame,&serv_addr) == -1){
+            perror("sendto");
+            return -1;
+        }
+        else
+        {
+            idUser = trame.ID_OP==Connectok ? trame.ID_USER : -1;
+            printf("%s\n",trame.DATA);
+            return trame.ID_OP;
+        }
+    }
+
 }
 
 
@@ -132,6 +145,15 @@ void* heartBeats(void* arg){
 
     while(1){
         sleep(FREQ_HEART);
-        sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+        envoyer(&trame,&serv_addr);
     }
+}
+
+int envoyer(Trame *trame, struct sockaddr_in *addresseServeur) {
+    return  (int)sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+}
+
+int recevoir(Trame *trame, struct sockaddr_in *addresseServeur) {
+    socklen_t taille=sizeof(serv_addr);
+    return (int)recvfrom(sd, &trame, sizeof(trame) , 0, (struct sockaddr *)&serv_addr, &taille );
 }

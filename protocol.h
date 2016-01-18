@@ -7,6 +7,7 @@
 
 #define SERVER_PORT 1500
 #define MAX_MSG 1024
+#define FREQ_HEART 30
 
 struct Trame {
 
@@ -40,5 +41,7 @@ enum ID_OP{
     Errorcommande,
     Heartbeat
 };
+
+
 
 #endif //IRCCHAT_CHAT_H
