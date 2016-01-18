@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/fs03/share/users/pe.cochet/home/Documents/4IRC/ImplementationReseau/Projet/IRCChat/client.c
+stdio.h
+-
+protocol.h
+/fs03/share/users/pe.cochet/home/Documents/4IRC/ImplementationReseau/Projet/IRCChat/protocol.h
+
+/fs03/share/users/pe.cochet/home/Documents/4IRC/ImplementationReseau/Projet/IRCChat/protocol.h
+
