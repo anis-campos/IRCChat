@@ -24,13 +24,20 @@ int main (int argc, char *argv[])
 
     pthread_t threadHeartBeat;
 
-    
+
     char addresseIP[20];
 
     //Accueil: config user & ip
     system("clear");
-    printf("\n\n         ///   ///////       //////\n        ///   ///    ///  ///        \n       ///   ///////      ///        //   ||_||  //\\\\ =||=\n      ///   ///   ///      ///////   \\\\   || || //~\\\\  || \n\n      ___________________________\n               CONNEXION\n      ___________________________");
-    printf("\n      Pseudo: ");
+    printf("\n\n");
+    printf("         ///   ///////       //////  \n");
+    printf("        ///   ///    ///  ///        \n");
+    printf("       ///   ///////      ///        //   ||_||  //\\\\ =||=\n");
+    printf("      ///   ///   ///      ///////   \\\\   || || //~\\\\  || \n\n");
+    printf("      ___________________________\n");
+    printf("               CONNEXION         \n");
+    printf("      ___________________________\n");
+    printf("      Pseudo: ");
     scanf("%s",pseudo);
 
     do{
@@ -48,9 +55,7 @@ int main (int argc, char *argv[])
     }
 
 
-    //saisie du pseudo
-    printf("\nVeuillez saisir le pseudo  : ");
-    scanf("%s",pseudo);
+    printf("\n===// IRCChat //===========================================\n");
 
     // Connexion au serveur
     int code;
@@ -69,6 +74,8 @@ int main (int argc, char *argv[])
 
         }
     }while(code!=Connectok);
+
+    printf("Connexion accepté");
 
     pthread_mutex_unlock(&mutex);
 
@@ -111,7 +118,6 @@ int creerSocket(const char * adresseIp, const char* pseud){
     client_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     client_addr.sin_port        = htons(0);
 
-    printf("Creation du socket vers %s\n",adresseIp);
     if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
     {
         perror("Impossible de creer le socket");
