@@ -8,7 +8,7 @@
 #define SERVEUR_PORT 1500
 #define MAX_MSG 1024
 
-typedef struct Trame {
+typedef struct trame {
 
     int ID_OP;
     int ID_SEQ;
@@ -18,8 +18,25 @@ typedef struct Trame {
     int ID_USER;
     int ID_SALON;
 
+}Trame;
+
+enum ID_OP{
+    Connect,
+    Connectok,
+    Connectuserrefuse,
+    Connectnumberrefuse,
+    Join,
+    Joinok,
+    Joinrefuse,
+    Disconnect,
+    Leave,
+    Liste,
+    Say,
+    Sayok,
+    Sayerror,
+    Echo,
+    Errorcommande,
+    Heartbeat
 };
-
-
 
 #endif //IRCCHAT_CHAT_H
