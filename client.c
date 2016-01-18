@@ -24,13 +24,17 @@ int main (int argc, char *argv[])
 
     pthread_t threadHeartBeat;
 
-
+    
     char addresseIP[20];
 
+    //Accueil: config user & ip
+    system("clear");
+    printf("\n\n         ///   ///////       //////\n        ///   ///    ///  ///        \n       ///   ///////      ///        //   ||_||  //\\\\ =||=\n      ///   ///   ///      ///////   \\\\   || || //~\\\\  || \n\n      ___________________________\n               CONNEXION\n      ___________________________");
+    printf("\n      Pseudo: ");
+    scanf("%s",pseudo);
 
-    // Saisie d'une adresse de serveur valide
     do{
-        printf("Veuillez saisir l'adresse IP du serveur : ");
+        printf("      IP serveur: ");
         scanf("%s",addresseIP);
     }while(creerSocket(addresseIP,pseudo)==-1);
 

@@ -102,24 +102,37 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named IRCChat
+# Target rules for targets named ClientIRCChat
 
 # Build rule for target.
-IRCChat: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 IRCChat
-.PHONY : IRCChat
+ClientIRCChat: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ClientIRCChat
+.PHONY : ClientIRCChat
 
 # fast build rule for target.
-IRCChat/fast:
-	$(MAKE) -f CMakeFiles/IRCChat.dir/build.make CMakeFiles/IRCChat.dir/build
-.PHONY : IRCChat/fast
+ClientIRCChat/fast:
+	$(MAKE) -f CMakeFiles/ClientIRCChat.dir/build.make CMakeFiles/ClientIRCChat.dir/build
+.PHONY : ClientIRCChat/fast
+
+#=============================================================================
+# Target rules for targets named ServeurIRCChat
+
+# Build rule for target.
+ServeurIRCChat: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ServeurIRCChat
+.PHONY : ServeurIRCChat
+
+# fast build rule for target.
+ServeurIRCChat/fast:
+	$(MAKE) -f CMakeFiles/ServeurIRCChat.dir/build.make CMakeFiles/ServeurIRCChat.dir/build
+.PHONY : ServeurIRCChat/fast
 
 client.o: client.c.o
 .PHONY : client.o
 
 # target to build an object file
 client.c.o:
-	$(MAKE) -f CMakeFiles/IRCChat.dir/build.make CMakeFiles/IRCChat.dir/client.c.o
+	$(MAKE) -f CMakeFiles/ClientIRCChat.dir/build.make CMakeFiles/ClientIRCChat.dir/client.c.o
 .PHONY : client.c.o
 
 client.i: client.c.i
@@ -127,7 +140,7 @@ client.i: client.c.i
 
 # target to preprocess a source file
 client.c.i:
-	$(MAKE) -f CMakeFiles/IRCChat.dir/build.make CMakeFiles/IRCChat.dir/client.c.i
+	$(MAKE) -f CMakeFiles/ClientIRCChat.dir/build.make CMakeFiles/ClientIRCChat.dir/client.c.i
 .PHONY : client.c.i
 
 client.s: client.c.s
@@ -135,8 +148,32 @@ client.s: client.c.s
 
 # target to generate assembly for a file
 client.c.s:
-	$(MAKE) -f CMakeFiles/IRCChat.dir/build.make CMakeFiles/IRCChat.dir/client.c.s
+	$(MAKE) -f CMakeFiles/ClientIRCChat.dir/build.make CMakeFiles/ClientIRCChat.dir/client.c.s
 .PHONY : client.c.s
+
+serveur-udp.o: serveur-udp.c.o
+.PHONY : serveur-udp.o
+
+# target to build an object file
+serveur-udp.c.o:
+	$(MAKE) -f CMakeFiles/ServeurIRCChat.dir/build.make CMakeFiles/ServeurIRCChat.dir/serveur-udp.c.o
+.PHONY : serveur-udp.c.o
+
+serveur-udp.i: serveur-udp.c.i
+.PHONY : serveur-udp.i
+
+# target to preprocess a source file
+serveur-udp.c.i:
+	$(MAKE) -f CMakeFiles/ServeurIRCChat.dir/build.make CMakeFiles/ServeurIRCChat.dir/serveur-udp.c.i
+.PHONY : serveur-udp.c.i
+
+serveur-udp.s: serveur-udp.c.s
+.PHONY : serveur-udp.s
+
+# target to generate assembly for a file
+serveur-udp.c.s:
+	$(MAKE) -f CMakeFiles/ServeurIRCChat.dir/build.make CMakeFiles/ServeurIRCChat.dir/serveur-udp.c.s
+.PHONY : serveur-udp.c.s
 
 # Help Target
 help:
@@ -144,12 +181,16 @@ help:
 	@echo "... all (the default if no target is provided)"
 	@echo "... clean"
 	@echo "... depend"
-	@echo "... IRCChat"
+	@echo "... ClientIRCChat"
+	@echo "... ServeurIRCChat"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... client.o"
 	@echo "... client.i"
 	@echo "... client.s"
+	@echo "... serveur-udp.o"
+	@echo "... serveur-udp.i"
+	@echo "... serveur-udp.s"
 .PHONY : help
 
 
