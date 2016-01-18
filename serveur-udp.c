@@ -8,12 +8,12 @@
 struct Client {
   struct sockaddr client_addr;
   char name[100];
-}
+};
 
 struct Salon {
   char name[100];
   int clients_id[50];
-}
+};
 
 typedef struct Client Client;
 typedef struct Salon Salon;

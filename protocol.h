@@ -19,7 +19,26 @@ struct Trame {
     int ID_SALON;
 
 };
-
 typedef struct Trame Trame;
+
+
+enum ID_OP{
+    Connect,
+    Connectok,
+    Connectuserrefuse,
+    Connectnumberrefuse,
+    Join,
+    Joinok,
+    Joinrefuse,
+    Disconnect,
+    Leave,
+    Liste,
+    Say,
+    Sayok,
+    Sayerror,
+    Echo,
+    Errorcommande,
+    Heartbeat
+};
 
 #endif //IRCCHAT_CHAT_H

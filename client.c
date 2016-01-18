@@ -19,60 +19,8 @@ struct sockaddr_in serv_addr;
 int idUser;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void configuration(char * adresseIp, char* pseudo){
-
-    printf("Veuillez saisir l'adresse IP du serveur : ");
-    scanf("%s",adresseIp);
-
-}
-
-
-int creerSocket(const char * adresseIp, const char* pseud){
-
-    struct sockaddr_in client_addr;
-
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    client_addr.sin_port        = htons(0);
-
-    printf("Creation du socket vers %s\n",adresseIp);
-    if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
-    {
-        perror("Impossible de creer le socket");
-        return -1;
-    }
-
-    if (bind(sd,(struct sockaddr *)&client_addr, sizeof client_addr) == -1)
-    {
-        perror("bind");
-         return -1;
-    }
-
-    serv_addr.sin_family = AF_INET;
-    if (inet_aton(adresseIp, &(serv_addr.sin_addr)) == 0)
-    {
-        printf("Invalid IP address format <%s>\n",adresseIp);
-        return -1;
-    }
-    serv_addr.sin_port = htons(SERVER_PORT);
-
-    return 1;
-}
-
-void* heartBeats(void* arg){
-
-    Trame trame;
-
-    trame.ID_OP = Heartbeat;
-    trame.ID_USER = idUser;
-
-    pthread_mutex_lock(&mutex);
-
-    while(1){
-        sleep(FREQ_HEART);
-        sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    }
-}
+int creerSocket(const char * adresseIp, const char* pseud);
+void* heartBeats(void* arg);
 
 int main (int argc, char *argv[])
 {
@@ -88,14 +36,18 @@ int main (int argc, char *argv[])
     scanf("%s",pseudo);
 
     do{
-        configuration(addresseIP,pseudo);
+        printf("Veuillez saisir l'adresse IP du serveur : ");
+        scanf("%s",addresseIP);
     }while(creerSocket(addresseIP,pseudo)==-1);
 
-
+    pthread_mutex_lock(&mutex);
     if(pthread_create(&threadHeartBeat, NULL, heartBeats, NULL) == -1) {
         perror("pthread_create threadHeartBeat");
         return EXIT_FAILURE;
     }
+
+
+
 
     /*
     for (i = 2; i < argc; i++)
@@ -123,4 +75,63 @@ int main (int argc, char *argv[])
     }*/
     close(sd);
     return 0;
+}
+
+int connexion(){
+    Trame trame;
+    trame.ID_OP = Connect;
+    strcpy(trame.DATA,"PEC");
+
+    return sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+}
+
+
+int creerSocket(const char * adresseIp, const char* pseud){
+
+    struct sockaddr_in client_addr;
+
+    client_addr.sin_family = AF_INET;
+    client_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    client_addr.sin_port        = htons(0);
+
+    printf("Creation du socket vers %s\n",adresseIp);
+    if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        perror("Impossible de creer le socket");
+        return -1;
+    }
+
+    if (bind(sd,(struct sockaddr *)&client_addr, sizeof client_addr) == -1)
+    {
+        perror("bind");
+        return -1;
+    }
+
+    serv_addr.sin_family = AF_INET;
+    if (inet_aton(adresseIp, &(serv_addr.sin_addr)) == 0)
+    {
+        printf("Invalid IP address format <%s>\n",adresseIp);
+        return -1;
+    }
+    serv_addr.sin_port = htons(SERVER_PORT);
+
+    return 1;
+}
+
+
+
+void* heartBeats(void* arg){
+
+    Trame trame;
+
+    trame.ID_OP = Heartbeat;
+    trame.ID_USER = idUser;
+
+    pthread_mutex_lock(&mutex);
+    printf("\nLe Coeur commence à battre^^\n");
+
+    while(1){
+        sleep(FREQ_HEART);
+        sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    }
 }
