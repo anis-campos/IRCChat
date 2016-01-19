@@ -9,6 +9,7 @@
 
 #include "client.h"
 
+#define MAX_SALON 10
 
 
 int sd;
@@ -21,8 +22,16 @@ fd_set set; // Ensemble des descripteurs de fichiers en lecture
 
 struct timeval timeout;
 
+void nextSalon();
 
-int idSalon;
+void prevSalon();
+
+void setSalon(char *token);
+
+char *nomSalon[MAX_SALON];
+int idSalons[MAX_SALON];
+int indexSalonCurent=0;
+int indexLast=0;
 
 
 void clean_stdin(void)
@@ -44,7 +53,7 @@ void initSelect(){
 
 
     /* Initialize the timeout data structure. */
-    timeout.tv_sec = 10;
+    timeout.tv_sec = 300;
     timeout.tv_usec = 0;
 }
 
@@ -123,8 +132,12 @@ int main (int argc, char *argv[])
 
     while(1){
 
+        if(indexLast>0)
+            printf("#%s>",nomSalon[indexSalonCurent]);
+
         initSelect();
         retval = select(sd+1,&set, NULL, NULL,&timeout);
+
 
         if (retval == -1)
         {
@@ -164,6 +177,7 @@ int main (int argc, char *argv[])
     return 0;
 }
 
+
 void traitementReception(Trame trameRecue){
     switch(trameRecue.ID_OP){
         case ConnectOk :
@@ -173,6 +187,27 @@ void traitementReception(Trame trameRecue){
 
         case JoinOk :
 	    printf("\t<JoinOk> : %s\n",trameRecue.DATA);
+             idSalons[indexLast]=trameRecue.ID_SALON;
+             nomSalon[indexLast]=malloc(strlen(trameRecue.DATA)+1);
+            strcpy(nomSalon[indexLast],trameRecue.DATA);
+            indexSalonCurent = indexLast;
+            indexLast++;
+            break;
+
+        case LeaveOk:
+            printf("\t<LeaveOk> : %s\n",trameRecue.DATA);
+            for (int i = 0; i < indexLast; ++i) {
+                if(idSalons[i]==trameRecue.ID_SALON){
+                    free(nomSalon[i]);
+                    nomSalon[i]=nomSalon[indexLast];
+                    idSalons[i]=idSalons[indexLast];
+                    if (indexSalonCurent == i)
+                        indexSalonCurent--;
+
+                    indexLast--;
+                    break;
+                }
+            }
             break;
 
         case JoinRefuse :
@@ -223,6 +258,14 @@ int traitementEnvoye() {
     /* get the first token */
     token = strtok(buf, s);
 
+    if(!(strcmp(token,":next")))
+        nextSalon();
+    if(!(strcmp(token,":prev")))
+        prevSalon();
+    if(!(strcmp(token,":set"))){
+        token = strtok(NULL, s);
+        setSalon(token);
+    }
 
     trame.ID_OP = commandToInt(token);
 
@@ -230,6 +273,11 @@ int traitementEnvoye() {
         printf("Commande inconue : %s\n",token);
     else
         printf("Commande reconnue : %s\n",token);
+
+
+    if(trame.ID_OP==Join && indexLast==MAX_SALON-1){
+        printf("Désolé, nombre maximum de salon atteint");
+    }
 
     token = strtok(NULL, s);
 
@@ -241,7 +289,7 @@ int traitementEnvoye() {
         token = strtok(NULL, s);
     }
 
-    trame.ID_SALON = idSalon;
+    trame.ID_SALON = idSalons[indexSalonCurent];
     trame.ID_USER = idUser;
 
     int ret =  envoyer(trame,serv_addr);
@@ -256,7 +304,26 @@ int traitementEnvoye() {
 
 }
 
+void setSalon(char *token) {
 
+    for (int i = 0; i < indexLast; ++i) {
+        if(!strcmp(token,nomSalon[i])){
+            indexSalonCurent = i;
+        }
+    }
+}
+
+void prevSalon() {
+    if(indexSalonCurent!=0){
+      indexSalonCurent--;
+    }
+}
+
+void nextSalon() {
+    if(indexSalonCurent!=indexLast){
+        indexSalonCurent++;
+    }
+}
 
 
 int commandToInt(char * command) {
@@ -346,7 +413,6 @@ void* heartBeats(void* arg){
     trame.ID_USER = idUser;
 
     pthread_mutex_lock(&mutex);
-    printf("\nLe Coeur commence à battre^^\n");
 
     while(1){
         sleep(FREQ_HEART);
