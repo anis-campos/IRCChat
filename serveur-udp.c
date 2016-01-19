@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "protocol.h"
 #include <stdlib.h>
+#include <time.h>
 
 struct Client {
     int actif;
@@ -26,8 +27,14 @@ typedef struct Salon Salon;
 int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr);
 int addClientToSalon(Salon* salons, Trame* trame);
 void echo(Salon salon,int id_salon, char* message, Client* clients);
+void deleteFromSalons(Client* clients,int clientID,Salon* salons);
+void initSelect();
+void timeoutHandle(Client* clients, Salon* salons);
+
 
 int sd;
+fd_set set; // Ensemble des descripteurs de fichiers en lecture
+struct timeval timeout;
 
 void quit( int signalId) {
   close(sd);
@@ -45,7 +52,7 @@ int main(void)
 
   Salon salons[10];
 
-  char message[100];
+  char message[255];
 
   int i;
   for (i = 0; i<10; i++) {
@@ -61,111 +68,196 @@ int main(void)
   for (j = 0; j<50; j++) {
     clients[j].actif = 0;
   }
+  
+  if (fork() == 0) {
 
-  // Create socket
-  if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
-  {
-    perror("socket creation");
-    return 1;
-  }
-  // Bind it
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  server_addr.sin_port = htons(SERVER_PORT);
+    // Create socket
+    if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+      perror("socket creation");
+      return 1;
+    }
+    // Bind it
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(SERVER_PORT);
 
-  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &a, sizeof(a) );
+    setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &a, sizeof(a) );
 
-  if (bind(sd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1)
-  {
-    perror("bind");
-    return 1;
-  }
-  signal(SIGINT,quit);
-  for (;;)
-  {
-    addr_len = sizeof(client_addr);
-    n = recvfrom(sd, (void*) &trame, sizeof(Trame), 0, (struct sockaddr *)&client_addr, &addr_len);
-    if (n == -1)
-      perror("recvfrom");
-    else {
+    if (bind(sd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1)
+    {
+      perror("bind");
+      return 1;
+    }
+    signal(SIGINT,quit);
+    for (;;)
+    {
+      addr_len = sizeof(client_addr);
+      n = recvfrom(sd, (void*) &trame, sizeof(Trame), 0, (struct sockaddr *)&client_addr, &addr_len);
+      
+      if (n == -1)
+	perror("recvfrom");
+      else {
+	if (trame.ID_USER != -1) {
+	    clients[trame.ID_USER].timestamp = time(NULL);
+	}
+	int ret;
+	switch(trame.ID_OP){
 
-int ret;
-      switch(trame.ID_OP){
+	  case Connect :
 
-        case Connect :
+		printf("Demande de connexion\n");
+		ret = addClient(clients, &trame, client_addr);
 
-              printf("Demande de connexion\n");
-               ret = addClient(clients, &trame, client_addr);
+		if (ret >= 0) {
+		  printf("connexion réussie\n");
+		  reponseClient.ID_OP = ConnectOk;
+		  reponseClient.ID_USER = ret;
+		}
+		else if (ret == -1) {
+		  printf("échec : trop de clients\n");
+		  reponseClient.ID_OP = ConnectNumberRefuse;
+		}
+		else {
+		  printf("échec : nom déjà utilisé\n");
+		  reponseClient.ID_OP = ConnectUserRefuse;
+		}
 
-              if (ret >= 0) {
-                printf("connexion réussie\n");
-                reponseClient.ID_OP = ConnectOk;
-                reponseClient.ID_USER = ret;
-              }
-              else if (ret == -1) {
-                printf("échec : trop de clients\n");
-                reponseClient.ID_OP = ConnectNumberRefuse;
-              }
-              else {
-                printf("échec : nom déjà utilisé\n");
-                reponseClient.ID_OP = ConnectUserRefuse;
-              }
+		break;
 
-              break;
+	  case Join:
 
-        case Join:
+	    ret = addClientToSalon(salons, &trame);
 
-           ret = addClientToSalon(salons, &trame);
+		if (ret >= 0) {
+		  printf("connexion réussie\n");
+		  reponseClient.ID_OP = JoinOk;
+		  reponseClient.ID_USER = trame.ID_USER;
+		  reponseClient.ID_SALON = ret;
+		  sprintf(message,"%s a rejoint #%s",clients[trame.ID_USER].name,salons[ret].name);
+		  echo(salons[ret],ret,message,clients);
+		}
+		else if (ret == -1) {
+		  printf("échec : trop de clients\n");
+		  reponseClient.ID_OP = JoinRefuse;
+		}
 
-              if (ret >= 0) {
-                printf("connexion réussie\n");
-                reponseClient.ID_OP = JoinOk;
-                reponseClient.ID_USER = trame.ID_USER;
-                reponseClient.ID_SALON = ret;
-                sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
-                echo(salons[ret],ret,message,clients);
-              }
-              else if (ret == -1) {
-                printf("échec : trop de clients\n");
-                reponseClient.ID_OP = JoinRefuse;
-              }
+	    break;
 
-          break;
+	  case Disconnect:
+	    printf("Disconnect\n");
+	    deleteFromSalons(clients,trame.ID_USER,salons);
+	    clients[trame.ID_USER].actif = 0;
+	    clients[trame.ID_USER].name[0] = '\0';
+	    break;
 
-        case Disconnect:
-          printf("Disconnect\n");
-          break;
+	  case Say:
+	    printf("say\n");
+	    sprintf(message,"#%s<%s> %s",salons[trame.ID_SALON].name,clients[trame.ID_USER].name,trame.DATA);
+	    echo(salons[trame.ID_SALON],trame.ID_SALON,message,clients);
+	    reponseClient.ID_OP = 11;
+	    reponseClient.ID_USER = trame.ID_USER;
+	    break;
 
-        case Say:
-          break;
+	  case Leave :
+	    printf("leave\n");
+	    i = 0;
+	    while (i<10 && salons[trame.ID_SALON].clients_id[i] != trame.ID_USER) {
+	      i++;
+	    }
+	    salons[trame.ID_SALON].clients_id[i] = -1;
+	    sprintf(message,"%s a quitté #%s",clients[trame.ID_USER].name,salons[trame.ID_SALON].name);
+	    break;
 
-        case Leave :
-          printf("leave\n");
-          break;
+	  case Liste :
+	    printf("liste\n");
+	    message[0] = '\0';
+	    for (i = 0; i<10; i++) {
+	      strcat(message,salons[i].name);
+	      strcat(message,"\n");
+	    }
+	    reponseClient.ID_OP = 13;
+	    reponseClient.ID_USER = trame.ID_USER;
+	    strcpy(reponseClient.DATA,message);
+	    break;
+	  case Verify :
+	    timeoutHandle(clients,salons);
+	    break;
 
-        case Liste :
-          printf("liste\n");
-          break;
+	  default:
+	    printf("ERREUR : invalid ID_OP %d\n",trame.ID_OP);
+	    exit(-1);
+	}
 
-        case HeartBeat :
-          printf("say\n");
-          break;
 
-        default:
-          printf("ERREUR : invalid ID_OP %d\n",trame.ID_OP);
-          exit(-1);
+
+	if (sendto(sd, (void*) &reponseClient, sizeof(reponseClient), 0,
+		  (struct sockaddr *)&(client_addr), sizeof(client_addr)) == -1)
+	{
+	  perror("sendto");
+	}
       }
+    
+      
+    }
+  } else {
+      int sd2;
 
-
-
-      if (sendto(sd, (void*) &reponseClient, sizeof(reponseClient), 0,
-                 (struct sockaddr *)&(client_addr), sizeof(client_addr)) == -1)
+      struct sockaddr_in client_addr2, serv_addr2;
+     
+      // Create socket
+      if ((sd2 = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
       {
-        perror("sendto");
+	perror("socket");
+	return 1;
+      }
+      // Bind socket
+      client_addr2.sin_family = AF_INET;
+      client_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
+      client_addr2.sin_port        = htons(0);
+      if (bind(sd2,(struct sockaddr *)&client_addr2, sizeof (client_addr2)) == -1)
+      {
+	perror("bind");
+	return 1;
+      }
+      // Fill server address structure
+      serv_addr2.sin_family = AF_INET;
+      if (inet_aton("127.0.0.1", &(serv_addr2.sin_addr)) == 0)
+      {
+	printf("Invalid IP address format 127.0.0.1\n");
+	return 1;
+      }
+      serv_addr2.sin_port = htons(SERVER_PORT);
+     
+      Trame timeTrame;
+      timeTrame.ID_OP = 17;
+      timeTrame.ID_USER = -1;
+      
+      //send message every 30 seconds
+      for (;;) {
+	sleep(10);
+	if (sendto(sd2, (void*) &timeTrame, sizeof(timeTrame), 0,
+	      (struct sockaddr *)&serv_addr2, sizeof(serv_addr2)) == -1)
+	{
+	  perror("sendto");
+	  return 1;
+	}
+      }
+  }
+  
+  return 0;
+}
+
+void timeoutHandle(Client* clients, Salon* salons) {
+    int i;
+    int now = time(NULL);
+    for (i = 0; i<50; i++) {
+      if (clients[i].actif && clients[i].timestamp<now-90) {
+	deleteFromSalons(clients,i,salons);
+	clients[i].actif = 0;
+	clients[i].name[0] = '\0';
       }
     }
-  }
-  return 0;
 }
 
 
@@ -187,7 +279,11 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
   }
 }
 
-void listeServeur(Salon* salon){
+void listeServeur(Salon* salon, Client* clients){
+    int i;
+    for (i = 0; i<10; i++) {
+      
+    }
 
 }
 
@@ -247,3 +343,16 @@ int addClientToSalon(Salon* salons, Trame* trame) {
   return -1;
 }
 
+void deleteFromSalons(Client* clients, int clientID, Salon* salons) {
+  int i,j;
+  char message[100];
+  for (i = 0; i<10; i++) {
+    for (j = 0; j<10; j++) {
+      if (salons[i].clients_id[j] == clientID) {
+	salons[i].clients_id[j] = -1;
+	sprintf(message,"%s vient de se déconnecter",clients[clientID].name);
+	echo(salons[i],i,message,clients);
+      }
+    }
+  }
+}

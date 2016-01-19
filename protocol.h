@@ -39,7 +39,9 @@ enum ID_OP{
     SayError,
     Echo,
     ErrorCommande,
-    HeartBeat
+    HeartBeat,
+    leaveOk,
+    verify
 };
 
 #endif //IRCCHAT_CHAT_H
