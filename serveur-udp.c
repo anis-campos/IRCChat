@@ -30,6 +30,7 @@ void echo(Salon salon,int id_salon, char* message, Client* clients);
 void deleteFromSalons(Client* clients,int clientID,Salon* salons);
 void timeoutHandle(Client* clients, Salon* salons);
 void listeServeur(Salon* salons, Client* clients);
+void acquitement(Trame reponseClient, struct sockaddr_in client_addr);
 
 
 int sd;
@@ -118,6 +119,7 @@ int ret;
                 reponseClient.ID_OP = ConnectUserRefuse;
               }
 
+              acquitement(reponseClient,client_addr);
               break;
 
         case Join:
@@ -125,10 +127,11 @@ int ret;
 	    ret = addClientToSalon(salons, &trame);
 	    clients[trame.ID_USER].timestamp = time(NULL);
               if (ret >= 0) {
-                printf("connexion réussie\n");
+                printf("joined\n");
                 reponseClient.ID_OP = JoinOk;
                 reponseClient.ID_USER = trame.ID_USER;
                 reponseClient.ID_SALON = ret;
+		acquitement(reponseClient,client_addr);
                 sprintf(reponseClient.DATA,"%s",trame.DATA);
                 sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
                 echo(salons[ret],ret,message,clients);
@@ -139,6 +142,7 @@ int ret;
                 reponseClient.ID_OP = JoinRefuse;
 		reponseClient.ID_USER = trame.ID_USER;
 		strcpy(reponseClient.DATA,"échec : tu es déjà dans le salon");
+		acquitement(reponseClient,client_addr);
               }
 
           break;
@@ -155,9 +159,10 @@ int ret;
 	    clients[trame.ID_USER].timestamp = time(NULL);
 	    printf("say\n");
 	    sprintf(message,"#%s<%s> %s",salons[trame.ID_SALON].name,clients[trame.ID_USER].name,trame.DATA);
-	    echo(salons[trame.ID_SALON],trame.ID_SALON,message,clients);
 	    reponseClient.ID_OP = 11;
 	    reponseClient.ID_USER = trame.ID_USER;
+              acquitement(reponseClient,client_addr);
+	    echo(salons[trame.ID_SALON],trame.ID_SALON,message,clients);
 	    break;
 
 	  case Leave :
@@ -170,6 +175,7 @@ int ret;
 	    salons[trame.ID_SALON].clients_id[i] = -1;
 	    sprintf(message,"%s a quitté #%s",clients[trame.ID_USER].name,salons[trame.ID_SALON].name);
 	    timeoutHandle(clients,salons);
+	    acquitement(reponseClient,client_addr);
 	    break;
 
 	  case Liste :
@@ -184,6 +190,7 @@ int ret;
 	    reponseClient.ID_OP = 13;
 	    reponseClient.ID_USER = trame.ID_USER;
 	    strcpy(reponseClient.DATA,message);
+	    acquitement(reponseClient,client_addr);
 	    break;
 	  case Verify :
 	    timeoutHandle(clients,salons);
@@ -195,19 +202,22 @@ int ret;
 
         default:
           printf("ERREUR : invalid ID_OP %d\n",trame.ID_OP);
-          exit(-1);
+	break;
       }
 
 
+    }
+  }
+  return 0;
+}
 
+void acquitement(Trame reponseClient, struct sockaddr_in client_addr){
       if (sendto(sd, (void*) &reponseClient, sizeof(reponseClient), 0,
                  (struct sockaddr *)&(client_addr), sizeof(client_addr)) == -1)
       {
         perror("sendto");
       }
-    }
-  }
-  return 0;
+  
 }
 
 void timeoutHandle(Client* clients, Salon* salons) {
@@ -231,8 +241,10 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
   trame.ID_SALON = id_salon;
   strcpy(trame.DATA, message);
   int w;
-  for (w = 0; w<10; w++) {
+  printf("id salon %d\n",id_salon);
+  for (w = 0; w<50; w++) {
     if(salon.clients_id[w] != -1){
+      printf("%s\n",clients[salon.clients_id[w]].name);
       trame.ID_USER = salon.clients_id[w];
       if (sendto(sd, (void*) &trame, sizeof(trame), 0,
                  (struct sockaddr *)&(clients[salon.clients_id[w]].client_addr), sizeof(clients[salon.clients_id[w]].client_addr)) == -1)
@@ -299,13 +311,13 @@ int addClientToSalon(Salon* salons, Trame* trame) {
       }
       int w =0, exist = 0;
       while(w<50 && exist ==0){
+        w++;
         if(salons[i].clients_id[w] == -1){
           salons[i].clients_id[w] = trame->ID_USER;
           exist = 1;
         }
-        w++;
       }
-      return w;
+      return i;
     }
   }
   return -1;
