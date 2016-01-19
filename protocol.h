@@ -5,9 +5,9 @@
 #ifndef IRCCHAT_PROTOCOL_H
 #define IRCCHAT_PROTOCOL_H
 
-#define SERVER_PORT 1500
+#define SERVER_PORT 1501
 #define MAX_MSG 1024
-#define FREQ_HEART 30
+#define FREQ_HEART 300
 
 struct Trame {
 
