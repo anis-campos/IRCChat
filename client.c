@@ -32,13 +32,12 @@ struct timeval timeout;
 
 int main (int argc, char *argv[])
 {
+    //Variables du main
     int sd, cptr=0;
-
     pthread_t threadHeartBeat;
-
-
     char addresseIP[20];
-
+    
+    /*******************ACCEUIL********************/
     //Accueil: config user & ip
     system("clear");
     printf("\n\n");
@@ -48,12 +47,12 @@ int main (int argc, char *argv[])
     printf("      ///   ///   ///      ///////   \\\\   || || //~\\\\  || \n\n");
     printf("      ___________________________\n");
     printf("               CONNEXION         \n");
-    printf("      ___________________________\n");
-    printf("      Pseudo: ");
+    printf("      ___________________________");
+    printf("\n      Pseudo: ");
     scanf("%s",pseudo);
 
     do{
-        printf("      IP serveur: ");
+        printf("\n      IP serveur: ");
         scanf("%s",addresseIP);
     }while(creerSocket(addresseIP,pseudo)==-1);
 
@@ -76,27 +75,29 @@ int main (int argc, char *argv[])
         switch(code){
 
             case ConnectNumberRefuse:
-                printf("Veuillez reaysser plus tard");
+                printf("\n      *Veuillez réessayer plus tard.");
                 exit(-1);
 
 
             case ConnectUserRefuse:
-                printf("\nVeuillez saisir le pseudo  : ");
+                printf("\n      Veuillez saisir un autre pseudo : ");
                 scanf("%s",pseudo);
                 break;
         }
-    }while(code!= ConnectOk);
+     }while(code!= ConnectOk);
 
-    printf("Le code %d:",code);
-    printf("Connexion accepté");
+    /*******************MODE T'CHAT********************/
+    system("clear");
+    printf("\n===// IRCChat //==============================================");
+
+    printf("\n     | *Connexion acceptée");
 
     //lancer le thread HeartBeat
     pthread_mutex_unlock(&mutex);
-
     initSelect();
-
     int retval;
     Trame trame;
+ 
     while(1){
 
         retval = select(2,&set, NULL, NULL,&timeout);
@@ -105,7 +106,7 @@ int main (int argc, char *argv[])
 
         if (retval == -1)
         {
-            perror ( " select ( ) " ) ;
+            perror ( "\n     | *Erreur de select." ) ;
         }
         else if (retval)
         {
@@ -125,10 +126,10 @@ int main (int argc, char *argv[])
 
         }
         else{
-            printf("TIMEOUT\n");
+            //printf("\n     | *TIMEOUT\n");
             cptr++;
             if(cptr==3){
-                printf("Le serveur n'est plus disponible...Connexion perdu. Fin du programme");
+                printf("\n     | *Le serveur n'est plus disponible...Connexion perdue.");
                 exit(-1);
             }
         }
@@ -147,21 +148,25 @@ void traitementReception(Trame trameRecue){
     switch(trameRecue.ID_OP){
         case ConnectOk :
             idUser = trameRecue.ID_USER;//maj id
-            printf("%s\n",trameRecue.DATA);
+            printf("\n     | *%s\n",trameRecue.DATA);
             break;
         case JoinOk :
+	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
         case JoinRefuse :
+	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
         case SayOk :
+	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
         case SayError :
+	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
-        case ErrorCommande :
+	case ErrorCommande :
+	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
         case Echo :
-            break;
-        case HeartBeat :
+            printf("\n     | %s",trameRecue.DATA);
             break;
 
     }
