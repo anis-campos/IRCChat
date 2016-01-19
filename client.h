@@ -7,7 +7,7 @@
 #ifndef IRCCHAT_CLIENT_H
 #define IRCCHAT_CLIENT_H
 
-int creerSocket(const char * adresseIp, const char* pseud);
+int creerSocket(const char * adresseIp);
 void* heartBeats(void* arg);
 int connexion();
 
@@ -15,9 +15,10 @@ int envoyer(Trame  trame, struct sockaddr_in addresseServeur);
 int recevoir(Trame  * trame, struct sockaddr_in addresseServeur);
 
 
-void traitementEnvoye();
+int traitementEnvoye();
 void traitementReception(Trame trame);
 
-int initSelect();
+
+int commandToInt(char * command);
 
 #endif //IRCCHAT_CLIENT_H

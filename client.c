@@ -7,14 +7,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/select.h>
-
 #include "client.h"
 
 
@@ -30,10 +22,36 @@ fd_set set; // Ensemble des descripteurs de fichiers en lecture
 struct timeval timeout;
 
 
+int idSalon;
+
+
+void clean_stdin(void)
+{
+    int c;
+
+    do {
+        c = getchar();
+    } while (c != '\n' && c != EOF);
+}
+
+
+void initSelect(){
+
+    /* Initialize the file descriptor set. */
+    FD_ZERO (&set);
+    FD_SET (STDIN_FILENO, &set);
+    FD_SET (sd, &set);
+
+
+    /* Initialize the timeout data structure. */
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+}
+
 int main (int argc, char *argv[])
 {
     //Variables du main
-    int sd, cptr=0;
+    int cptr=0;
     pthread_t threadHeartBeat;
     char addresseIP[20];
     
@@ -50,11 +68,12 @@ int main (int argc, char *argv[])
     printf("      ___________________________");
     printf("\n      Pseudo: ");
     scanf("%s",pseudo);
-
+    clean_stdin();
     do{
         printf("\n      IP serveur: ");
         scanf("%s",addresseIP);
-    }while(creerSocket(addresseIP,pseudo)==-1);
+        clean_stdin();
+    }while(creerSocket(addresseIP)==-1);
 
 
 
@@ -82,6 +101,7 @@ int main (int argc, char *argv[])
             case ConnectUserRefuse:
                 printf("\n      Veuillez saisir un autre pseudo : ");
                 scanf("%s",pseudo);
+                clean_stdin();
                 break;
         }
      }while(code!= ConnectOk);
@@ -94,39 +114,43 @@ int main (int argc, char *argv[])
 
     //lancer le thread HeartBeat
     pthread_mutex_unlock(&mutex);
-    initSelect();
+
+
+
     int retval;
     Trame trame;
- 
+
+
     while(1){
 
-        retval = select(2,&set, NULL, NULL,&timeout);
-
-        recevoir(&trame,serv_addr);
+        initSelect();
+        retval = select(sd+1,&set, NULL, NULL,&timeout);
 
         if (retval == -1)
         {
             perror ( "\n     | *Erreur de select." ) ;
         }
-        else if (retval)
+        else if (retval == 1)
         {
 
 
             // Nouvelles données clavier
             if (FD_ISSET(0, &set))
             {
+                printf("\t| *Clavier\n");
                 traitementEnvoye();
             }
 
                 //Nouveau message du serveur;
             else if(FD_ISSET(sd, &set)){
+                printf("\t| *Reseau\n");
                 recevoir(&trame,serv_addr);
                 traitementReception(trame);
             }
 
         }
         else{
-            //printf("\n     | *TIMEOUT\n");
+            printf("\n     | *TIMEOUT\n");
             cptr++;
             if(cptr==3){
                 printf("\n     | *Le serveur n'est plus disponible...Connexion perdue.");
@@ -134,9 +158,7 @@ int main (int argc, char *argv[])
             }
         }
 
-        switch(trame.ID_OP){
 
-        }
 
     }
 
@@ -174,79 +196,80 @@ void traitementReception(Trame trameRecue){
 }
 
 
-void traitementEnvoye() {
+
+
+int traitementEnvoye() {
+
+    printf("Debut du traitement\n");
 
     Trame trame;
 
-
-    char cmd[50];
-
+    char buf[2000];
 
 
-    scanf(":%s %s", cmd,trame.DATA);
-    trame.ID_OP = commandToInt(cmd);
 
-    switch(commandToInt(cmd)){
+    scanf("%[^\n]",buf);
+    clean_stdin();
 
-        case Join :
-            break;
+    const char s[2] = " ";
 
-        case Disconnect:
-            printf("Disconnect\n");
-            break;
+    char *token;
 
-        case Say:
-            break;
+    /* get the first token */
+    token = strtok(buf, s);
 
-        case Leave :
-            printf("leave\n");
-            break;
 
-        case Liste :
-            printf("liste\n");
-            break;
+    trame.ID_OP = commandToInt(token);
 
-        default:
-            printf("Commande inconnue : %s\n", cmd);
-            break;
+    if(trame.ID_OP==-1)
+        printf("Commande inconue : %s\n",token);
+    else
+        printf("Commande reconnue : %s\n",token);
+
+    token = strtok(NULL, s);
+
+    strcpy(trame.DATA,"");
+    /* walk through other tokens */
+    while( token != NULL )
+    {
+        strcat(trame.DATA,token);
+        token = strtok(NULL, s);
     }
+
+    trame.ID_SALON = idSalon;
+    trame.ID_USER = idUser;
+
+    int ret =  envoyer(trame,serv_addr);
+    if(trame.ID_OP==Disconnect)
+    {
+        printf("ByeBye....\n");
+        exit(0);
+    }
+
+    return ret;
+
 
 }
 
 
-int commandToInt(char * command){
 
-    if(strcmp(command,"say"))
+
+int commandToInt(char * command) {
+
+    if(!strcmp(command,":say"))
         return Say;
-    if(strcmp(command,"join"))
+    if(!strcmp(command,":join"))
         return Join;
-    if(strcmp(command,"leave"))
+    if(!strcmp(command,":leave"))
         return Leave;
-    if(strcmp(command,"liste"))
+    if(!strcmp(command,":liste"))
         return Liste;
-    if(strcmp(command,"disconnect"))
+    if(!strcmp(command,":disconnect"))
         return Disconnect;
 
 
     //n'est pas une commande
     return -1;
-}
-
-
-
-int initSelect(){
-
-
-    /* Initialize the file descriptor set. */
-    FD_ZERO (&set);
-    FD_SET (STDIN_FILENO, &set);
-    FD_SET (sd, &set);
-
-
-    /* Initialize the timeout data structure. */
-    timeout.tv_sec = 3;
-    timeout.tv_usec = 0;
-
 }
 
 
@@ -278,7 +301,7 @@ int connexion(){
 
 
 
-int creerSocket(const char * adresseIp, const char* pseud){
+int creerSocket(const char * adresseIp){
 
     struct sockaddr_in client_addr;
 
