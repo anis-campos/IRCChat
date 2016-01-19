@@ -133,7 +133,7 @@ int ret;
                 reponseClient.ID_SALON = ret;
 		acquitement(reponseClient,client_addr);
                 sprintf(reponseClient.DATA,"%s",trame.DATA);
-                sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
+                sprintf(message,"%s joined #%s\n",clients[trame.ID_USER].name,salons[ret].name);
                 echo(salons[ret],ret,message,clients);
 		timeoutHandle(clients,salons);
               }
@@ -141,7 +141,7 @@ int ret;
                 printf("échec : tu es déjà dans le salon\n");
                 reponseClient.ID_OP = JoinRefuse;
 		reponseClient.ID_USER = trame.ID_USER;
-		strcpy(reponseClient.DATA,"échec : tu es déjà dans le salon");
+		strcpy(reponseClient.DATA,"échec : tu es déjà dans le salon\n");
 		acquitement(reponseClient,client_addr);
               }
 
@@ -158,7 +158,7 @@ int ret;
 	  case Say:
 	    clients[trame.ID_USER].timestamp = time(NULL);
 	    printf("say\n");
-	    sprintf(message,"#%s<%s> %s",salons[trame.ID_SALON].name,clients[trame.ID_USER].name,trame.DATA);
+	    sprintf(message,"#%s<%s> %s\n",salons[trame.ID_SALON].name,clients[trame.ID_USER].name,trame.DATA);
 	    reponseClient.ID_OP = 11;
 	    reponseClient.ID_USER = trame.ID_USER;
               acquitement(reponseClient,client_addr);
@@ -173,7 +173,7 @@ int ret;
 	      i++;
 	    }
 	    salons[trame.ID_SALON].clients_id[i] = -1;
-	    sprintf(message,"%s a quitté #%s",clients[trame.ID_USER].name,salons[trame.ID_SALON].name);
+	    sprintf(message,"%s a quitté #%s\n",clients[trame.ID_USER].name,salons[trame.ID_SALON].name);
 	    timeoutHandle(clients,salons);
 	    acquitement(reponseClient,client_addr);
 	    break;
