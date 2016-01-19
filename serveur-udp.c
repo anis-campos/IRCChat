@@ -4,7 +4,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <signal.h>
 #include "protocol.h"
+#include <stdlib.h>
 
 struct Client {
   int actif;
@@ -22,21 +24,33 @@ typedef struct Client Client;
 typedef struct Salon Salon;
 
 int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr);
+int addClientToSalon(Salon* salons, Trame* trame);
+
+int sd;
+
+void quit() {
+    close(sd);
+    exit(0);
+}  
 
 int main(void)
 {
-  int sd, n;
+  int n;
+  int a = 1;
   socklen_t addr_len;
   struct sockaddr_in client_addr, server_addr;
   Trame trame;
   Trame reponseClient;
-  Trame reponseMultiples;
   
   Salon salons[10];
   
   int i;
   for (i = 0; i<10; i++) {
       sprintf(salons[i].name,"salon%d",i);
+      int w;
+      for (w = 0; w<10; w++) {
+	salons[i].clients_id[w] = -1;
+      }
   }
   
   Client clients[50];
@@ -44,9 +58,6 @@ int main(void)
   for (j = 0; j<50; j++) {
      clients[j].actif = 0;
   }
-  
-  int destinatairesId[50];
-  int nbDestinataires;
   
   // Create socket
   if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
@@ -58,14 +69,17 @@ int main(void)
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   server_addr.sin_port = htons(SERVER_PORT);
+  
+  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &a, sizeof(a) );
+  
   if (bind(sd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1)
   {
     perror("bind");
     return 1;
   }
+  signal(SIGINT,quit);
   for (;;)
   {
-    nbDestinataires = 0;
     addr_len = sizeof(client_addr);
     n = recvfrom(sd, (void*) &trame, sizeof(Trame), 0,
         (struct sockaddr *)&client_addr, &addr_len);
@@ -91,7 +105,17 @@ int main(void)
 	}
       }
       else if (trame.ID_OP == 4) {
-	printf("JOIN\n");
+	int ret = addClientToSalon(salons, &trame);
+	
+	if (ret >= 0) {
+	  printf("connexion réussie\n");
+	  reponseClient.ID_OP = 5;
+	  reponseClient.ID_USER = ret;
+	}
+	else if (ret == -1) {
+	  printf("échec : trop de clients\n");
+	  reponseClient.ID_OP = 6;
+	}
       }
       else if (trame.ID_OP == 7) {
 	printf("Disconnect\n");
@@ -110,21 +134,36 @@ int main(void)
       }
       
       if (sendto(sd, (void*) &reponseClient, sizeof(reponseClient), 0,
-	    (struct sockaddr *)&(clients[reponseClient.ID_USER].client_addr), sizeof(client_addr)) == -1)
+	    (struct sockaddr *)&(client_addr), sizeof(client_addr)) == -1)
       {
 	perror("sendto");
-      }
-      
-      for (i = 0; i<nbDestinataires; i++) {
-	if (sendto(sd, (void*) &reponseMultiples, sizeof(reponseMultiples), 0,
-	    (struct sockaddr *)&(clients[destinatairesId[i]].client_addr), sizeof(client_addr)) == -1)
-      {
-	perror("sendto");
-      }
       }
     }
   }
   return 0;
+}
+
+
+void echo(Salon salon,int id_salon, char* message, Client* clients){
+  Trame trame;
+  trame.ID_OP = 13;
+  trame.ID_SALON = id_salon;
+  strcpy(trame.DATA, message);
+  int w;
+  for (w = 0; w<10; w++) {
+    if(salon.clients_id[w] != -1){
+      trame.ID_USER = salon.clients_id[w];
+      if (sendto(sd, (void*) &trame, sizeof(trame), 0,
+	  (struct sockaddr *)&(clients[salon.clients_id[w]].client_addr), sizeof(clients[salon.clients_id[w]].client_addr)) == -1)
+	{
+	  perror("sendto");
+      }
+    }
+  }
+}
+
+void listeServeur(Salon* salon){
+  
 }
 
 int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr) {
@@ -157,4 +196,28 @@ int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr) {
     
     return ind;
   }
+}
+
+int addClientToSalon(Salon* salons, Trame* trame) {
+  int i;
+    for(i = 0; i<10; i ++){
+      if(strcmp(salons[i].name,trame->DATA) == 0){
+	int a;
+	for(a = 0; a<50; a ++){
+	  if(salons[i].clients_id[a] == trame->ID_USER){
+	    return -1;
+	  }
+	}
+	int w =0, exist = 0;
+	while(w<50 && !exist){
+	  if(salons[i].clients_id[w] == -1){
+	    salons[i].clients_id[w] = trame->ID_USER;
+	    exist = 1;
+	  }
+	  w++;
+	}
+	return w;
+      }
+    }
+    return -1;
 }
