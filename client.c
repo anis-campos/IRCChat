@@ -32,13 +32,12 @@ struct timeval timeout;
 
 int main (int argc, char *argv[])
 {
+    //Variables du main
     int sd, cptr=0;
-
     pthread_t threadHeartBeat;
-
-
     char addresseIP[20];
-
+    
+    /*******************ACCEUIL********************/
     //Accueil: config user & ip
     system("clear");
     printf("\n\n");
