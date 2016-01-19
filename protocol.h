@@ -42,7 +42,4 @@ enum ID_OP{
     HeartBeat
 };
 
-
-
 #endif //IRCCHAT_CHAT_H
-:join CPE

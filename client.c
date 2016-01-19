@@ -69,10 +69,9 @@ int main (int argc, char *argv[])
 
     printf("\n===// IRCChat //===========================================\n");
 
-    //Thread de perssistance de connexion
     // Connexion au serveur
     int code;
-   // do{
+    do{
         code = connexion();
         switch(code){
 
@@ -86,7 +85,7 @@ int main (int argc, char *argv[])
                 scanf("%s",pseudo);
                 break;
         }
-//    }while(code!= ConnectOk);
+    }while(code!= ConnectOk);
 
     printf("Le code %d:",code);
     printf("Connexion accepté");
@@ -102,7 +101,7 @@ int main (int argc, char *argv[])
 
         retval = select(2,&set, NULL, NULL,&timeout);
 
-        recevoir(trame,serv_addr);
+        recevoir(&trame,serv_addr);
 
         if (retval == -1)
         {
@@ -120,7 +119,7 @@ int main (int argc, char *argv[])
 
                 //Nouveau message du serveur;
             else if(FD_ISSET(sd, &set)){
-                recevoir(trame,serv_addr);
+                recevoir(&trame,serv_addr);
                 traitementReception(trame);
             }
 
@@ -172,6 +171,60 @@ void traitementReception(Trame trameRecue){
 
 void traitementEnvoye() {
 
+    Trame trame;
+
+
+    char cmd[50];
+
+
+
+    scanf(":%s %s", cmd,trame.DATA);
+    trame.ID_OP = commandToInt(cmd);
+
+    switch(commandToInt(cmd)){
+
+        case Join :
+            break;
+
+        case Disconnect:
+            printf("Disconnect\n");
+            break;
+
+        case Say:
+            break;
+
+        case Leave :
+            printf("leave\n");
+            break;
+
+        case Liste :
+            printf("liste\n");
+            break;
+
+        default:
+            printf("Commande inconnue : %s\n", cmd);
+            break;
+    }
+
+}
+
+
+int commandToInt(char * command){
+
+    if(strcmp(command,"say"))
+        return Say;
+    if(strcmp(command,"join"))
+        return Join;
+    if(strcmp(command,"leave"))
+        return Leave;
+    if(strcmp(command,"liste"))
+        return Liste;
+    if(strcmp(command,"disconnect"))
+        return Disconnect;
+
+
+    //n'est pas une commande
+    return -1;
 }
 
 
@@ -206,7 +259,7 @@ int connexion(){
     }
 
 
-    if(recevoir(trame,serv_addr) == -1){
+    if(recevoir(&trame,serv_addr) == -1){
         perror("sendto");
         exit(-1);
     }
@@ -272,7 +325,7 @@ int envoyer(Trame trame, struct sockaddr_in addresseServeur) {
     return  (int)sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 }
 
-int recevoir(Trame trame, struct sockaddr_in addresseServeur) {
+int recevoir(Trame * trame, struct sockaddr_in addresseServeur) {
     socklen_t taille=sizeof(serv_addr);
-    return (int)recvfrom(sd, &trame, sizeof(trame) , 0, (struct sockaddr *)&serv_addr, &taille );
+    return (int)recvfrom(sd, trame, sizeof(*trame) , 0, (struct sockaddr *)&serv_addr, &taille );
 }
