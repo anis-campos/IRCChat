@@ -161,7 +161,7 @@ int main (int argc, char *argv[])
 
         }
         else{
-            printf("\n     | *TIMEOUT\n");
+            //printf("\n     | *TIMEOUT\n");
             cptr++;
             if(cptr==3){
                 printf("\n     | *Le serveur n'est plus disponible...Connexion perdue.");
