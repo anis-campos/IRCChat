@@ -137,13 +137,11 @@ int main (int argc, char *argv[])
             // Nouvelles données clavier
             if (FD_ISSET(0, &set))
             {
-                printf("\t| *Clavier\n");
                 traitementEnvoye();
             }
 
                 //Nouveau message du serveur;
             else if(FD_ISSET(sd, &set)){
-                printf("\t| *Reseau\n");
                 recevoir(&trame,serv_addr);
                 traitementReception(trame);
             }
@@ -170,27 +168,34 @@ void traitementReception(Trame trameRecue){
     switch(trameRecue.ID_OP){
         case ConnectOk :
             idUser = trameRecue.ID_USER;//maj id
-            printf("\n     | *%s\n",trameRecue.DATA);
-            break;
-        case JoinOk :
-	    printf("\n     | *%s\n",trameRecue.DATA);
-            break;
-        case JoinRefuse :
-	    printf("\n     | *%s\n",trameRecue.DATA);
-            break;
-        case SayOk :
-	    printf("\n     | *%s\n",trameRecue.DATA);
-            break;
-        case SayError :
-	    printf("\n     | *%s\n",trameRecue.DATA);
-            break;
-	case ErrorCommande :
-	    printf("\n     | *%s\n",trameRecue.DATA);
-            break;
-        case Echo :
-            printf("\n     | %s",trameRecue.DATA);
+            printf("\t<ConnectionOK> : %s\n",trameRecue.DATA);
             break;
 
+        case JoinOk :
+	    printf("\t<JoinOk> : %s\n",trameRecue.DATA);
+            break;
+
+        case JoinRefuse :
+	    printf("\t<JoinRefuse> : %s\n",trameRecue.DATA);
+            break;
+
+        case SayOk :
+	    printf("\t<SayOk> : %s\n",trameRecue.DATA);
+            break;
+
+        case SayError :
+	    printf("\t<SayError> : %s\n",trameRecue.DATA);
+            break;
+
+	case ErrorCommande :
+	    printf("\t<ErrorCommande> : %s\n",trameRecue.DATA);
+            break;
+
+        case Echo :
+            printf("\t<Echo> : %s",trameRecue.DATA);
+            break;
+        default:
+            printf("\tERREUR : %d - %s",trameRecue.ID_OP,trameRecue.DATA);
     }
 
 }

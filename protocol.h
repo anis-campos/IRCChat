@@ -40,8 +40,8 @@ enum ID_OP{
     Echo,
     ErrorCommande,
     HeartBeat,
-    leaveOk,
-    verify
+    LeaveOk,
+    Verify
 };
 
 #endif //IRCCHAT_CHAT_H
