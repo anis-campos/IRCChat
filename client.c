@@ -139,6 +139,8 @@ int main (int argc, char *argv[])
     recevoir(&trame,serv_addr);
     printf("%s",trame.DATA);
 
+
+
     printf("\n===// IRCChat //==============================================");
 
 
@@ -215,14 +217,15 @@ int main (int argc, char *argv[])
 
 
 void traitementReception(Trame trameRecue){
+    int i;
     switch(trameRecue.ID_OP){
         case ConnectOk :
             idUser = trameRecue.ID_USER;//maj id
-            printf("\t<ConnectionOK> : %s\n",trameRecue.DATA);
+            //printf("\t<ConnectionOK> : %s\n",trameRecue.DATA);
             break;
 
         case JoinOk :
-	    printf("\t<JoinOk> : %s\n",trameRecue.DATA);
+	    //printf("\t<JoinOk> : %s\n",trameRecue.DATA);
              idSalons[indexLast]=trameRecue.ID_SALON;
              nomSalon[indexLast]=malloc(strlen(trameRecue.DATA)+1);
             strcpy(nomSalon[indexLast],trameRecue.DATA);
@@ -231,8 +234,9 @@ void traitementReception(Trame trameRecue){
             break;
 
         case LeaveOk:
-            printf("\t<LeaveOk> : %s\n",trameRecue.DATA);
-            for (int i = 0; i < indexLast; ++i) {
+            //printf("\t<LeaveOk> : %s\n",trameRecue.DATA);
+
+            for ( i = 0; i < indexLast; ++i) {
                 if(idSalons[i]==trameRecue.ID_SALON){
                     free(nomSalon[i]);
                     nomSalon[i]=nomSalon[indexLast];
@@ -251,7 +255,7 @@ void traitementReception(Trame trameRecue){
             break;
 
         case SayOk :
-	    printf("\t<SayOk> : %s\n",trameRecue.DATA);
+	    //printf("\t<SayOk> : %s\n",trameRecue.DATA);
             break;
 
         case SayError :
@@ -263,7 +267,7 @@ void traitementReception(Trame trameRecue){
             break;
 
         case Echo :
-            printf("\t<Echo> : %s",trameRecue.DATA);
+            printf("\t%s",trameRecue.DATA);
             break;
         default:
             printf("\tERREUR : %d - %s",trameRecue.ID_OP,trameRecue.DATA);
@@ -358,7 +362,8 @@ int traitementEnvoye() {
 
 void setSalon(char *token) {
 
-    for (int i = 0; i < indexLast; ++i) {
+    int i;
+    for ( i = 0; i < indexLast; ++i) {
         if(!strcmp(token,nomSalon[i])){
             indexSalonCurent = i;
         }
