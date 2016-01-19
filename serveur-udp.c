@@ -107,6 +107,7 @@ int ret;
                 reponseClient.ID_OP = ConnectOk;
                 reponseClient.ID_USER = ret;
 		timeoutHandle(clients,salons);
+		clients[ret].timestamp = time(NULL);
               }
               else if (ret == -1) {
                 printf("échec : trop de clients\n");
@@ -121,8 +122,8 @@ int ret;
 
         case Join:
 
-           ret = addClientToSalon(salons, &trame);
-
+	    ret = addClientToSalon(salons, &trame);
+	    clients[trame.ID_USER].timestamp = time(NULL);
               if (ret >= 0) {
                 printf("connexion réussie\n");
                 reponseClient.ID_OP = JoinOk;
@@ -131,7 +132,7 @@ int ret;
                 sprintf(reponseClient.DATA,"%s",trame.DATA);
                 sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
                 echo(salons[ret],ret,message,clients);
-	    timeoutHandle(clients,salons);
+		timeoutHandle(clients,salons);
               }
               else if (ret == -1) {
                 printf("échec : tu es déjà dans le salon\n");
@@ -151,6 +152,7 @@ int ret;
 	    break;
 
 	  case Say:
+	    clients[trame.ID_USER].timestamp = time(NULL);
 	    printf("say\n");
 	    sprintf(message,"#%s<%s> %s",salons[trame.ID_SALON].name,clients[trame.ID_USER].name,trame.DATA);
 	    echo(salons[trame.ID_SALON],trame.ID_SALON,message,clients);
@@ -159,6 +161,7 @@ int ret;
 	    break;
 
 	  case Leave :
+	    clients[trame.ID_USER].timestamp = time(NULL);
 	    printf("leave\n");
 	    i = 0;
 	    while (i<10 && salons[trame.ID_SALON].clients_id[i] != trame.ID_USER) {
@@ -170,6 +173,7 @@ int ret;
 	    break;
 
 	  case Liste :
+	    clients[trame.ID_USER].timestamp = time(NULL);
 	    timeoutHandle(clients,salons);
 	    printf("liste\n");
 	    message[0] = '\0';
@@ -185,6 +189,7 @@ int ret;
 	    timeoutHandle(clients,salons);
 	    break;
 	  case HeartBeat :
+	    clients[trame.ID_USER].timestamp = time(NULL);
 	    break;
 
 
@@ -210,9 +215,9 @@ void timeoutHandle(Client* clients, Salon* salons) {
     int date_now = time(NULL);
     for (i = 0; i<50; i++) {
       if (clients[i].actif && clients[i].timestamp<date_now-900) {
-	deleteFromSalons(clients,i,salons);
+	/*deleteFromSalons(clients,i,salons);
 	clients[i].actif = 0;
-	clients[i].name[0] = '\0';
+	clients[i].name[0] = '\0';*/
       }
     }
     listeServeur(salons,clients);
@@ -243,7 +248,8 @@ void listeServeur(Salon* salons, Client* clients){
     for (i = 0; i<10; i++) {
 	printf("\n%s :\n", salons[i].name);
 	for (y = 0; y<50; y++) {
-	  printf("\t%s\n", clients[salons[i].clients_id[y]].name);
+	  if(salons[i].clients_id[y] != -1)
+	    printf("\t%s\n", clients[salons[i].clients_id[y]].name);
 	}
     }
 }
@@ -263,7 +269,6 @@ int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr) {
     }
     i++;
   }
-  printf("%d\n",ind);
 
   if (memeNom) {
     return -2;
