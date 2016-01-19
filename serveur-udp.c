@@ -106,8 +106,8 @@ int ret;
                 printf("connexion réussie\n");
                 reponseClient.ID_OP = ConnectOk;
                 reponseClient.ID_USER = ret;
-		timeoutHandle(clients,salons);
 		clients[ret].timestamp = time(NULL);
+		timeoutHandle(clients,salons);
               }
               else if (ret == -1) {
                 printf("échec : trop de clients\n");
@@ -215,9 +215,11 @@ void timeoutHandle(Client* clients, Salon* salons) {
     int date_now = time(NULL);
     for (i = 0; i<50; i++) {
       if (clients[i].actif && clients[i].timestamp<date_now-900) {
-	/*deleteFromSalons(clients,i,salons);
+	printf("%d\n",clients[i].timestamp );
+	printf("%d\n",date_now-900 );
+	deleteFromSalons(clients,i,salons);
 	clients[i].actif = 0;
-	clients[i].name[0] = '\0';*/
+	clients[i].name[0] = '\0';
       }
     }
     listeServeur(salons,clients);
