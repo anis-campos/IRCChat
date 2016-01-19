@@ -132,13 +132,13 @@ int main (int argc, char *argv[])
 
 
     printf("\nListe des salons\n");
-
+/*
     trame.ID_OP=Liste;
     trame.ID_USER=idUser;
     envoyer(trame,serv_addr);
     recevoir(&trame,serv_addr);
     printf("%s",trame.DATA);
-
+*/
 
 
     printf("\n===// IRCChat //==============================================");
