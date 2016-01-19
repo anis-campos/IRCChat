@@ -25,6 +25,7 @@ typedef struct Salon Salon;
 
 int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr);
 int addClientToSalon(Salon* salons, Trame* trame);
+void echo(Salon salon,int id_salon, char* message, Client* clients);
 
 int sd;
 
@@ -43,6 +44,8 @@ int main(void)
   Trame reponseClient;
   
   Salon salons[10];
+  
+  char message[100];
   
   int i;
   for (i = 0; i<10; i++) {
@@ -86,6 +89,7 @@ int main(void)
     if (n == -1)
       perror("recvfrom");
     else {
+     
       if (trame.ID_OP == 0) {
 	printf("Demande de connexion\n");
 	int ret = addClient(clients, &trame, client_addr);
@@ -110,7 +114,10 @@ int main(void)
 	if (ret >= 0) {
 	  printf("connexion réussie\n");
 	  reponseClient.ID_OP = 5;
-	  reponseClient.ID_USER = ret;
+	  reponseClient.ID_USER = trame.ID_USER;
+	  reponseClient.ID_SALON = ret;
+	  sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
+	  echo(salons[ret],ret,message,clients);
 	}
 	else if (ret == -1) {
 	  printf("échec : trop de clients\n");
@@ -130,7 +137,7 @@ int main(void)
 	 printf("say\n");
       }
       else {
-	 printf("ERREUR\n");
+	 printf("ERREUR : invalid ID_OP %d\n",trame.ID_OP);
       }
       
       if (sendto(sd, (void*) &reponseClient, sizeof(reponseClient), 0,
@@ -221,3 +228,4 @@ int addClientToSalon(Salon* salons, Trame* trame) {
     }
     return -1;
 }
+
