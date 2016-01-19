@@ -45,3 +45,4 @@ enum ID_OP{
 
 
 #endif //IRCCHAT_CHAT_H
+:join CPE

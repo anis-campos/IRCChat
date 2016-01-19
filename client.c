@@ -10,21 +10,19 @@
 
 
 
-int sd;
-struct sockaddr_in serv_addr;
-int idUser;
-char pseudo[15];
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+ int sd;
+ struct sockaddr_in serv_addr;
+ int idUser;
+ int idSalon[50];
+ char pseudo[15];
+ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 
 int main (int argc, char *argv[])
 {
     int sd;
-
     pthread_t threadHeartBeat;
-
-
     char addresseIP[20];
 
     //Accueil: config user & ip
@@ -87,10 +85,11 @@ int main (int argc, char *argv[])
 void traitementReception(Trame trameRecue){
 	switch(trameRecue.ID_OP){
 		case Connectok :
-			idUser = trameRecue.ID_USER;//maj id
+			idUser = trameRecue.ID_USER; //maj id
 			printf("%c\n",trameRecue.DATA[MAX_MSG]);
 			break;
-		case Joinok : 
+		case Joinok :
+			
 			break;
 		case Joinrefuse : 
 			break;
@@ -104,22 +103,23 @@ void traitementReception(Trame trameRecue){
 			break;
 		case Heartbeat : 
 			break;
+		default:
+			break;
 	
 	}
-	return 0;
 }
 
 int connexion(){
     Trame trame;
     trame.ID_OP = Connect;
-    strcpy(trame.DATA,"PEC");
+    strcpy(trame.DATA,pseudo);
     socklen_t taille=sizeof(serv_addr);
 
-    if(envoyer(&trame,&serv_addr)==-1){
+    if(envoyer(trame,serv_addr)==-1){
         perror("sendto");
         return -1;
     }else{
-        if(recevoir(&trame,&serv_addr) == -1){
+        if(recevoir(trame,serv_addr) == -1){
             perror("sendto");
             return -1;
         }
@@ -179,15 +179,15 @@ void* heartBeats(void* arg){
 
     while(1){
         sleep(FREQ_HEART);
-        envoyer(&trame,&serv_addr);
+        envoyer(trame,serv_addr);
     }
 }
 
-int envoyer(Trame *trame, struct sockaddr_in *addresseServeur) {
+int envoyer(Trame trame, struct sockaddr_in addresseServeur) {
     return  (int)sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 }
 
-int recevoir(Trame *trame, struct sockaddr_in *addresseServeur) {
+int recevoir(Trame trame, struct sockaddr_in addresseServeur) {
     socklen_t taille=sizeof(serv_addr);
     return (int)recvfrom(sd, &trame, sizeof(trame) , 0, (struct sockaddr *)&serv_addr, &taille );
 }
