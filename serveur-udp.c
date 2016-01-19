@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "protocol.h"
 #include <stdlib.h>
+#include <time.h>
 
 struct Client {
     int actif;
@@ -28,6 +29,7 @@ int addClientToSalon(Salon* salons, Trame* trame);
 void echo(Salon salon,int id_salon, char* message, Client* clients);
 void deleteFromSalons(Client* clients,int clientID,Salon* salons);
 void timeoutHandle(Client* clients, Salon* salons);
+void listeServeur(Salon* salons, Client* clients);
 
 
 int sd;
@@ -104,6 +106,7 @@ int ret;
                 printf("connexion réussie\n");
                 reponseClient.ID_OP = ConnectOk;
                 reponseClient.ID_USER = ret;
+		timeoutHandle(clients,salons);
               }
               else if (ret == -1) {
                 printf("échec : trop de clients\n");
@@ -125,9 +128,10 @@ int ret;
                 reponseClient.ID_OP = JoinOk;
                 reponseClient.ID_USER = trame.ID_USER;
                 reponseClient.ID_SALON = ret;
-                reponseClient.DATA = = trame.DATA;
+                sprintf(reponseClient.DATA,"%s",trame.DATA);
                 sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
                 echo(salons[ret],ret,message,clients);
+	    timeoutHandle(clients,salons);
               }
               else if (ret == -1) {
                 printf("échec : tu es déjà dans le salon\n");
@@ -143,6 +147,7 @@ int ret;
 	    deleteFromSalons(clients,trame.ID_USER,salons);
 	    clients[trame.ID_USER].actif = 0;
 	    clients[trame.ID_USER].name[0] = '\0';
+	    timeoutHandle(clients,salons);
 	    break;
 
 	  case Say:
@@ -161,9 +166,11 @@ int ret;
 	    }
 	    salons[trame.ID_SALON].clients_id[i] = -1;
 	    sprintf(message,"%s a quitté #%s",clients[trame.ID_USER].name,salons[trame.ID_SALON].name);
+	    timeoutHandle(clients,salons);
 	    break;
 
 	  case Liste :
+	    timeoutHandle(clients,salons);
 	    printf("liste\n");
 	    message[0] = '\0';
 	    for (i = 0; i<10; i++) {
@@ -200,14 +207,15 @@ int ret;
 
 void timeoutHandle(Client* clients, Salon* salons) {
     int i;
-    int now = time(NULL);
+    int date_now = time(NULL);
     for (i = 0; i<50; i++) {
-      if (clients[i].actif && clients[i].timestamp<now-90) {
+      if (clients[i].actif && clients[i].timestamp<date_now-900) {
 	deleteFromSalons(clients,i,salons);
 	clients[i].actif = 0;
 	clients[i].name[0] = '\0';
       }
     }
+    listeServeur(salons,clients);
 }
 
 void echo(Salon salon,int id_salon, char* message, Client* clients){
@@ -230,9 +238,10 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
 
 void listeServeur(Salon* salons, Client* clients){
     int i, y;
+    system("clear");
     printf("Liste des utilisateurs dans les salons du serveur.\n");
     for (i = 0; i<10; i++) {
-	printf("%s :\n", salons[i].name);
+	printf("\n%s :\n", salons[i].name);
 	for (y = 0; y<50; y++) {
 	  printf("\t%s\n", clients[salons[i].clients_id[y]].name);
 	}
