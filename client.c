@@ -57,6 +57,7 @@ int main (int argc, char *argv[])
 
     printf("\n===// IRCChat //===========================================\n");
 
+    //Thread de perssistance de connexion
     // Connexion au serveur
     int code;
     do{
@@ -83,7 +84,30 @@ int main (int argc, char *argv[])
     return 0;
 }
 
-
+void traitementReception(Trame trameRecue){
+	switch(trameRecue.ID_OP){
+		case Connectok :
+			idUser = trameRecue.ID_USER;//maj id
+			printf("%c\n",trameRecue.DATA[MAX_MSG]);
+			break;
+		case Joinok : 
+			break;
+		case Joinrefuse : 
+			break;
+		case Sayok : 
+			break;
+		case Sayerror : 
+			break;
+		case Errorcommande : 
+			break;
+		case Echo : 
+			break;
+		case Heartbeat : 
+			break;
+	
+	}
+	return 0;
+}
 
 int connexion(){
     Trame trame;
