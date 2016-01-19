@@ -275,7 +275,7 @@ int addClientToSalon(Salon* salons, Trame* trame) {
       int a;
       for(a = 0; a<50; a ++){
         if(salons[i].clients_id[a] == trame->ID_USER){
-          return -1;
+          return i;
         }
       }
       int w =0, exist = 0;
