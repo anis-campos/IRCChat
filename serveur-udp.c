@@ -128,6 +128,7 @@ int main(void)
 	  case Join:
 
 	    ret = addClientToSalon(salons, &trame);
+	  printf("%d\n", ret);
 
 		if (ret >= 0) {
 		  printf("connexion réussie\n");
@@ -182,6 +183,8 @@ int main(void)
 	    break;
 	  case Verify :
 	    timeoutHandle(clients,salons);
+	    break;
+	  case HeartBeat :
 	    break;
 
 	  default:
@@ -279,12 +282,15 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
   }
 }
 
-void listeServeur(Salon* salon, Client* clients){
-    int i;
+void listeServeur(Salon* salons, Client* clients){
+    int i, y;
+    printf("Liste des utilisateur dans les salons du serveur.\n");
     for (i = 0; i<10; i++) {
-      
+	printf("%s :\n", salons[i].name);
+	for (y = 0; y<50; y++) {
+	  
+	}
     }
-
 }
 
 int addClient(Client* clients, Trame* trame, struct sockaddr_in client_addr) {
