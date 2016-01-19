@@ -161,8 +161,8 @@ void traitementReception(Trame trameRecue){
         case SayError :
 	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
-        case ErrorCommande 
-	    printf("\n     | *%s\n",trameRecue.DATA);:
+	case ErrorCommande :
+	    printf("\n     | *%s\n",trameRecue.DATA);
             break;
         case Echo :
             printf("\n     | %s",trameRecue.DATA);
