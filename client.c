@@ -72,22 +72,23 @@ int main (int argc, char *argv[])
     //Thread de perssistance de connexion
     // Connexion au serveur
     int code;
-    do{
+   // do{
         code = connexion();
         switch(code){
 
-            case Connectnumberrefuse:
+            case ConnectNumberRefuse:
                 printf("Veuillez reaysser plus tard");
-                break;
+                exit(-1);
 
-            case Connectuserrefuse:
+
+            case ConnectUserRefuse:
                 printf("\nVeuillez saisir le pseudo  : ");
                 scanf("%s",pseudo);
                 break;
-
         }
-    }while(code!=Connectok);
+//    }while(code!= ConnectOk);
 
+    printf("Le code %d:",code);
     printf("Connexion accepté");
 
     //lancer le thread HeartBeat
@@ -101,7 +102,7 @@ int main (int argc, char *argv[])
 
         retval = select(2,&set, NULL, NULL,&timeout);
 
-        recevoir(&trame,&serv_addr);
+        recevoir(trame,serv_addr);
 
         if (retval == -1)
         {
@@ -119,7 +120,7 @@ int main (int argc, char *argv[])
 
                 //Nouveau message du serveur;
             else if(FD_ISSET(sd, &set)){
-                recevoir(&trame,&serv_addr);
+                recevoir(trame,serv_addr);
                 traitementReception(trame);
             }
 
@@ -144,28 +145,28 @@ int main (int argc, char *argv[])
 }
 
 void traitementReception(Trame trameRecue){
-	switch(trameRecue.ID_OP){
-		case Connectok :
-			idUser = trameRecue.ID_USER;//maj id
-			printf("%c\n",trameRecue.DATA[MAX_MSG]);
-			break;
-		case Joinok : 
-			break;
-		case Joinrefuse : 
-			break;
-		case Sayok : 
-			break;
-		case Sayerror : 
-			break;
-		case Errorcommande : 
-			break;
-		case Echo : 
-			break;
-		case Heartbeat : 
-			break;
-	
-	}
-	return 0;
+    switch(trameRecue.ID_OP){
+        case ConnectOk :
+            idUser = trameRecue.ID_USER;//maj id
+            printf("%s\n",trameRecue.DATA);
+            break;
+        case JoinOk :
+            break;
+        case JoinRefuse :
+            break;
+        case SayOk :
+            break;
+        case SayError :
+            break;
+        case ErrorCommande :
+            break;
+        case Echo :
+            break;
+        case HeartBeat :
+            break;
+
+    }
+
 }
 
 
@@ -196,26 +197,27 @@ int initSelect(){
 int connexion(){
     Trame trame;
     trame.ID_OP = Connect;
-    strcpy(trame.DATA,"PEC");
+    strcpy(trame.DATA,pseudo);
     socklen_t taille=sizeof(serv_addr);
 
-    if(envoyer(&trame,&serv_addr)==-1){
+    if(envoyer(trame,serv_addr)==-1){
         perror("sendto");
-        return -1;
-    }else{
-        if(recevoir(&trame,&serv_addr) == -1){
-            perror("sendto");
-            return -1;
-        }
-        else
-        {
-            idUser = trame.ID_OP==Connectok ? trame.ID_USER : -1;
-            printf("%s\n",trame.DATA);
-            return trame.ID_OP;
-        }
+        exit( -1);
     }
 
+
+    if(recevoir(trame,serv_addr) == -1){
+        perror("sendto");
+        exit(-1);
+    }
+
+    idUser = trame.ID_OP== ConnectOk ? trame.ID_USER : -1;
+    printf("%s\n",trame.DATA);
+    return trame.ID_OP;
+
 }
+
+
 
 
 int creerSocket(const char * adresseIp, const char* pseud){
@@ -254,7 +256,7 @@ void* heartBeats(void* arg){
 
     Trame trame;
 
-    trame.ID_OP = Heartbeat;
+    trame.ID_OP = HeartBeat;
     trame.ID_USER = idUser;
 
     pthread_mutex_lock(&mutex);
@@ -262,15 +264,15 @@ void* heartBeats(void* arg){
 
     while(1){
         sleep(FREQ_HEART);
-        envoyer(&trame,&serv_addr);
+        envoyer(trame,serv_addr);
     }
 }
 
-int envoyer(Trame *trame, struct sockaddr_in *addresseServeur) {
+int envoyer(Trame trame, struct sockaddr_in addresseServeur) {
     return  (int)sendto(sd, &trame , sizeof(trame) , 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 }
 
-int recevoir(Trame *trame, struct sockaddr_in *addresseServeur) {
+int recevoir(Trame trame, struct sockaddr_in addresseServeur) {
     socklen_t taille=sizeof(serv_addr);
     return (int)recvfrom(sd, &trame, sizeof(trame) , 0, (struct sockaddr *)&serv_addr, &taille );
 }

@@ -25,21 +25,21 @@ typedef struct Trame Trame;
 
 enum ID_OP{
     Connect,
-    Connectok,
-    Connectuserrefuse,
-    Connectnumberrefuse,
+    ConnectOk,
+    ConnectUserRefuse,
+    ConnectNumberRefuse,
     Join,
-    Joinok,
-    Joinrefuse,
+    JoinOk,
+    JoinRefuse,
     Disconnect,
     Leave,
     Liste,
     Say,
-    Sayok,
-    Sayerror,
+    SayOk,
+    SayError,
     Echo,
-    Errorcommande,
-    Heartbeat
+    ErrorCommande,
+    HeartBeat
 };
 
 
