@@ -132,6 +132,8 @@ int ret;
               else if (ret == -1) {
                 printf("échec : tu es déjà dans le salon\n");
                 reponseClient.ID_OP = JoinRefuse;
+		reponseClient.ID_USER = trame.ID_USER;
+		strcpy(reponseClient.DATA,"échec : tu es déjà dans le salon");
               }
 
           break;
@@ -228,11 +230,11 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
 
 void listeServeur(Salon* salons, Client* clients){
     int i, y;
-    printf("Liste des utilisateur dans les salons du serveur.\n");
+    printf("Liste des utilisateurs dans les salons du serveur.\n");
     for (i = 0; i<10; i++) {
 	printf("%s :\n", salons[i].name);
 	for (y = 0; y<50; y++) {
-	  
+	  printf("\t%s\n", clients[salons[i].clients_id[y]].name);
 	}
     }
 }
