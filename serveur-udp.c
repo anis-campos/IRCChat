@@ -125,6 +125,7 @@ int ret;
                 reponseClient.ID_OP = JoinOk;
                 reponseClient.ID_USER = trame.ID_USER;
                 reponseClient.ID_SALON = ret;
+                reponseClient.DATA = = trame.DATA;
                 sprintf(message,"%s joined #%s",clients[trame.ID_USER].name,salons[ret].name);
                 echo(salons[ret],ret,message,clients);
               }
@@ -275,7 +276,7 @@ int addClientToSalon(Salon* salons, Trame* trame) {
       int a;
       for(a = 0; a<50; a ++){
         if(salons[i].clients_id[a] == trame->ID_USER){
-          return i;
+           return i;
         }
       }
       int w =0, exist = 0;
