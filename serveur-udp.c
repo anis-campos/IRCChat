@@ -245,6 +245,9 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
   for (w = 0; w<50; w++) {
     if(salon.clients_id[w] != -1){
       printf("%s\n",clients[salon.clients_id[w]].name);
+      printf("%s\n",inet_ntoa(clients[salon.clients_id[w]].client_addr.sin_addr));
+      printf("%d\n",clients[salon.clients_id[w]].client_addr.sin_port);
+      printf("%s\n",trame.DATA);
       trame.ID_USER = salon.clients_id[w];
       if (sendto(sd, (void*) &trame, sizeof(trame), 0,
                  (struct sockaddr *)&(clients[salon.clients_id[w]].client_addr), sizeof(clients[salon.clients_id[w]].client_addr)) == -1)
