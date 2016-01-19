@@ -70,8 +70,8 @@ int main (int argc, char *argv[])
     printf("\n\n");
     printf("         ///   ///////       //////  \n");
     printf("        ///   ///    ///  ///        \n");
-    printf("       ///   ///////      ///        //   ||_||  //\\\\ =||=\n");
-    printf("      ///   ///   ///      ///////   \\\\   || || //~\\\\  || \n\n");
+    printf("       ///   ///////      ///        // ||_||  //\\\\ =||=\n");
+    printf("      ///   ///   ///      ///////   \\\\ || || //~~\\\\ || \n\n");
     printf("      ___________________________\n");
     printf("               CONNEXION         \n");
     printf("      ___________________________");
@@ -79,7 +79,7 @@ int main (int argc, char *argv[])
     scanf("%s",pseudo);
     clean_stdin();
     do{
-        printf("\n      IP serveur: ");
+        printf("      IP serveur: ");
         scanf("%s",addresseIP);
         clean_stdin();
     }while(creerSocket(addresseIP)==-1);
@@ -117,7 +117,6 @@ int main (int argc, char *argv[])
 
     /*******************MODE T'CHAT********************/
     system("clear");
-    printf("\n===// IRCChat //==============================================");
 
     printf("\n     | *Connexion acceptée");
 
@@ -126,14 +125,29 @@ int main (int argc, char *argv[])
 
 
 
+
+
     int retval;
     Trame trame;
 
 
+    printf("\nListe des salons\n");
+
+    trame.ID_OP=Liste;
+    trame.ID_USER=idUser;
+    envoyer(trame,serv_addr);
+    recevoir(&trame,serv_addr);
+    printf("%s",trame.DATA);
+
+    printf("\n===// IRCChat //==============================================");
+
+
     while(1){
 
-        if(indexLast>0)
+        if(indexLast>0){
             printf("#%s>",nomSalon[indexSalonCurent]);
+            fflush(stdout);
+        }
 
         initSelect();
         retval = select(sd+1,&set, NULL, NULL,&timeout);
@@ -150,13 +164,35 @@ int main (int argc, char *argv[])
             // Nouvelles données clavier
             if (FD_ISSET(0, &set))
             {
-                traitementEnvoye();
+
+                if(traitementEnvoye()>0){
+
+                    //si envoyé
+                    FD_ZERO (&set);
+                    FD_SET (sd, &set);
+
+                    /* Initialize the timeout data structure. */
+                    timeout.tv_sec = 3;
+                    timeout.tv_usec = 0;
+
+                    //timeout de l'aquitement
+                    if(select(sd+1,&set, NULL, NULL,&timeout)!=1){
+                        printf("Le serveur ne repond pas. Fin du programme....");
+                        exit(0);
+                    }
+
+                    //recevoir l'aquittement
+                    recevoir(&trame,serv_addr);
+                    traitementReception(trame);
+                }
+
             }
 
                 //Nouveau message du serveur;
             else if(FD_ISSET(sd, &set)){
                 recevoir(&trame,serv_addr);
                 traitementReception(trame);
+
             }
 
         }
@@ -240,12 +276,10 @@ void traitementReception(Trame trameRecue){
 
 int traitementEnvoye() {
 
-    printf("Debut du traitement\n");
-
     Trame trame;
 
-    char buf[2000];
-
+    char buf[1024];
+    //strcpy(buf,"");
 
 
     scanf("%[^\n]",buf);
@@ -258,41 +292,59 @@ int traitementEnvoye() {
     /* get the first token */
     token = strtok(buf, s);
 
-    if(!(strcmp(token,":next")))
-        nextSalon();
-    if(!(strcmp(token,":prev")))
-        prevSalon();
-    if(!(strcmp(token,":set"))){
-        token = strtok(NULL, s);
-        setSalon(token);
+    if(strlen(token)<4) return -1;
+
+    if(token[0]==':'){
+        if(!(strcmp(token,":next"))){
+            nextSalon();
+            return 0;
+        }
+        if(!(strcmp(token,":prev")))
+        {
+            prevSalon();
+            return 0;
+        }
+        if(!(strcmp(token,":set"))){
+            token = strtok(NULL, s);
+            setSalon(token);
+            return 0;
+        }
+        trame.ID_OP = commandToInt(token);
+        if(trame.ID_OP==-1){
+            printf("\nCommande inconue : %s\n",token);
+            return -1;
+        }else{
+
+            if(trame.ID_OP==Join && indexLast==MAX_SALON-1){
+                printf("Désolé, nombre maximum de salon atteint");
+                return -1;
+            }
+
+
+            token = strtok(NULL, s);
+
+            strcpy(trame.DATA,"");
+            /* walk through other tokens */
+            while( token != NULL )
+            {
+                strcat(trame.DATA,token);
+                token = strtok(NULL, s);
+            }
+
+        }
+    }
+    else{
+        trame.ID_OP=Say;
+        strcpy(trame.DATA,buf);
     }
 
-    trame.ID_OP = commandToInt(token);
-
-    if(trame.ID_OP==-1)
-        printf("Commande inconue : %s\n",token);
-    else
-        printf("Commande reconnue : %s\n",token);
-
-
-    if(trame.ID_OP==Join && indexLast==MAX_SALON-1){
-        printf("Désolé, nombre maximum de salon atteint");
-    }
-
-    token = strtok(NULL, s);
-
-    strcpy(trame.DATA,"");
-    /* walk through other tokens */
-    while( token != NULL )
-    {
-        strcat(trame.DATA,token);
-        token = strtok(NULL, s);
-    }
 
     trame.ID_SALON = idSalons[indexSalonCurent];
     trame.ID_USER = idUser;
 
     int ret =  envoyer(trame,serv_addr);
+
+
     if(trame.ID_OP==Disconnect)
     {
         printf("ByeBye....\n");
