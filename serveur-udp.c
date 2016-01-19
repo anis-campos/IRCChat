@@ -49,8 +49,6 @@ int main(void)
   struct sockaddr_in client_addr, server_addr;
   Trame trame;
   Trame reponseClient;
-  
-  int retval;
 
   Salon salons[10];
 
@@ -70,42 +68,39 @@ int main(void)
   for (j = 0; j<50; j++) {
     clients[j].actif = 0;
   }
+  
+  if (fork() == 0) {
 
-  // Create socket
-  if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
-  {
-    perror("socket creation");
-    return 1;
-  }
-  // Bind it
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  server_addr.sin_port = htons(SERVER_PORT);
-
-  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &a, sizeof(a) );
-
-  if (bind(sd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1)
-  {
-    perror("bind");
-    return 1;
-  }
-  signal(SIGINT,quit);
-  for (;;)
-  {
-    addr_len = sizeof(client_addr);
-    retval = select(1,&set, NULL, NULL,&timeout);
-    n = recvfrom(sd, (void*) &trame, sizeof(Trame), 0, (struct sockaddr *)&client_addr, &addr_len);
-    
-    if (retval == -1)
+    // Create socket
+    if ((sd = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
     {
-	perror ( "\n     | *Erreur de select." ) ;
+      perror("socket creation");
+      return 1;
     }
-    else if (retval)
+    // Bind it
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(SERVER_PORT);
+
+    setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &a, sizeof(a) );
+
+    if (bind(sd, (struct sockaddr *)&server_addr, sizeof server_addr) == -1)
     {
+      perror("bind");
+      return 1;
+    }
+    signal(SIGINT,quit);
+    for (;;)
+    {
+      addr_len = sizeof(client_addr);
+      n = recvfrom(sd, (void*) &trame, sizeof(Trame), 0, (struct sockaddr *)&client_addr, &addr_len);
+      
       if (n == -1)
-      perror("recvfrom");
+	perror("recvfrom");
       else {
-	clients[trame.ID_USER].timestamp = time(NULL);
+	if (trame.ID_USER != -1) {
+	    clients[trame.ID_USER].timestamp = time(NULL);
+	}
 	int ret;
 	switch(trame.ID_OP){
 
@@ -185,6 +180,9 @@ int main(void)
 	    reponseClient.ID_USER = trame.ID_USER;
 	    strcpy(reponseClient.DATA,message);
 	    break;
+	  case Verify :
+	    timeoutHandle(clients,salons);
+	    break;
 
 	  default:
 	    printf("ERREUR : invalid ID_OP %d\n",trame.ID_OP);
@@ -199,20 +197,54 @@ int main(void)
 	  perror("sendto");
 	}
       }
-      timeoutHandle(clients,salons);
+    
       
     }
-    else{
-      printf("BIFFLE MOI\n");
-	timeoutHandle(clients,salons);
-    }
+  } else {
+      int sd2;
 
-    switch(trame.ID_OP){
-
-    }
-    
-    
+      struct sockaddr_in client_addr2, serv_addr2;
+     
+      // Create socket
+      if ((sd2 = socket(PF_INET, SOCK_DGRAM, 0)) == -1)
+      {
+	perror("socket");
+	return 1;
+      }
+      // Bind socket
+      client_addr2.sin_family = AF_INET;
+      client_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
+      client_addr2.sin_port        = htons(0);
+      if (bind(sd2,(struct sockaddr *)&client_addr2, sizeof (client_addr2)) == -1)
+      {
+	perror("bind");
+	return 1;
+      }
+      // Fill server address structure
+      serv_addr2.sin_family = AF_INET;
+      if (inet_aton("127.0.0.1", &(serv_addr2.sin_addr)) == 0)
+      {
+	printf("Invalid IP address format 127.0.0.1\n");
+	return 1;
+      }
+      serv_addr2.sin_port = htons(SERVER_PORT);
+     
+      Trame timeTrame;
+      timeTrame.ID_OP = 17;
+      timeTrame.ID_USER = -1;
+      
+      //send message every 30 seconds
+      for (;;) {
+	sleep(10);
+	if (sendto(sd2, (void*) &timeTrame, sizeof(timeTrame), 0,
+	      (struct sockaddr *)&serv_addr2, sizeof(serv_addr2)) == -1)
+	{
+	  perror("sendto");
+	  return 1;
+	}
+      }
   }
+  
   return 0;
 }
 
@@ -247,7 +279,11 @@ void echo(Salon salon,int id_salon, char* message, Client* clients){
   }
 }
 
-void listeServeur(Salon* salon){
+void listeServeur(Salon* salon, Client* clients){
+    int i;
+    for (i = 0; i<10; i++) {
+      
+    }
 
 }
 
@@ -319,18 +355,4 @@ void deleteFromSalons(Client* clients, int clientID, Salon* salons) {
       }
     }
   }
-}
-
-void initSelect(){
-
-
-    /* Initialize the file descriptor set. */
-    FD_ZERO (&set);
-    FD_SET (sd, &set);
-
-
-    /* Initialize the timeout data structure. */
-    timeout.tv_sec = 10;
-    timeout.tv_usec = 0;
-
 }
