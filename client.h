@@ -14,4 +14,10 @@ int connexion();
 int envoyer(Trame * trame, struct sockaddr_in* addresseServeur);
 int recevoir(Trame * trame, struct sockaddr_in* addresseServeur);
 
+
+void traitementEnvoye();
+void traitementReception(Trame trame);
+
+int initSelect();
+
 #endif //IRCCHAT_CLIENT_H
