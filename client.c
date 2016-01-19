@@ -6,6 +6,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/select.h>
+
 #include "client.h"
 
 
@@ -17,11 +26,19 @@
  char pseudo[15];
  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+fd_set set; // Ensemble des descripteurs de fichiers en lecture
+
+struct timeval timeout;
 
 
 int main (int argc, char *argv[])
 {
+<<<<<<< HEAD
     int sd;
+=======
+    int sd, cptr=0;
+
+>>>>>>> a25a4c4d1d494119f204cad4afdf48e8702a411f
     pthread_t threadHeartBeat;
     char addresseIP[20];
 
@@ -76,7 +93,54 @@ int main (int argc, char *argv[])
 
     printf("Connexion accepté");
 
+    //lancer le thread HeartBeat
     pthread_mutex_unlock(&mutex);
+
+    initSelect();
+
+    int retval;
+    Trame trame;
+    while(1){
+
+        retval = select(2,&set, NULL, NULL,&timeout);
+
+        recevoir(&trame,&serv_addr);
+
+        if (retval == -1)
+        {
+            perror ( " select ( ) " ) ;
+        }
+        else if (retval)
+        {
+
+
+            // Nouvelles données clavier
+            if (FD_ISSET(0, &set))
+            {
+                traitementEnvoye();
+            }
+
+                //Nouveau message du serveur;
+            else if(FD_ISSET(sd, &set)){
+                recevoir(&trame,&serv_addr);
+                traitementReception(trame);
+            }
+
+        }
+        else{
+            printf("TIMEOUT\n");
+            cptr++;
+            if(cptr==3){
+                printf("Le serveur n'est plus disponible...Connexion perdu. Fin du programme");
+                exit(-1);
+            }
+        }
+
+        switch(trame.ID_OP){
+
+        }
+
+    }
 
     close(sd);
     return 0;
@@ -108,6 +172,31 @@ void traitementReception(Trame trameRecue){
 	
 	}
 }
+
+
+void traitementEnvoye() {
+
+}
+
+
+
+int initSelect(){
+
+
+    /* Initialize the file descriptor set. */
+    FD_ZERO (&set);
+    FD_SET (STDIN_FILENO, &set);
+    FD_SET (sd, &set);
+
+
+    /* Initialize the timeout data structure. */
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
+
+}
+
+
+
 
 int connexion(){
     Trame trame;
@@ -164,7 +253,6 @@ int creerSocket(const char * adresseIp, const char* pseud){
 
     return 1;
 }
-
 
 
 void* heartBeats(void* arg){
